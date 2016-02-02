@@ -1,3 +1,4 @@
+import json
 import requests
 import pickle
 import os.path
@@ -97,9 +98,12 @@ class CDMSApi(object):
     def _make_request(self, verb, url, data={}):
         print('calling url %s' % url)
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
+
+        if data:
+            data = json.dumps(data)
         resp = getattr(self.session, verb)(url, data=data, headers=headers, verify=False)
 
-        if resp.status_code == 200:
+        if resp.status_code in (200, 201):
             return resp.json()
         return resp
 
@@ -138,3 +142,10 @@ class CDMSApi(object):
             guid=guid
         )
         return self._make_request('put', url, data=data)
+
+    def create(self, service, data):
+        url = "{base_url}/{service}Set".format(
+            base_url=self.CRM_REST_BASE_URL,
+            service=service
+        )
+        return self._make_request('post', url, data=data)

@@ -24,6 +24,10 @@ class Create(CreateView):
 class Update(UpdateView):
     model = Organisation
     fields = [
-        'name', 'alias', 'email_address'
+        'name', 'alias',
+        'uk_organisation', 'country',
+        'postcode', 'address1', 'uk_region',
+        'country_code', 'area_code', 'phone_number',
+        'email_address', 'sector'
     ]
     context_object_name = 'organisation'

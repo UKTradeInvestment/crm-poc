@@ -3,6 +3,21 @@ from django.core.urlresolvers import reverse
 
 from .managers import OrganisationManager
 
+CDMS_FIELD_MAPPING = {
+    'name': 'Name',
+    'alias': 'optevia_Alias',
+    'uk_organisation': 'optevia_ukorganisation',
+    'country': ('optevia_Country', lambda x: {'Id': x}),
+    'postcode': 'optevia_PostCode',
+    'address1': 'optevia_Address1',
+    'uk_region': ('optevia_UKRegion', lambda x: {'Id': x}),
+    'country_code': 'optevia_CountryCode',
+    'area_code': 'optevia_AreaCode',
+    'phone_number': 'optevia_TelephoneNumber',
+    'email_address': 'EMailAddress1',
+    'sector': ('optevia_Sector', lambda x: {'Id': x}),
+}
+
 
 class Organisation(models.Model):
     name = models.CharField(max_length=255)
@@ -48,5 +63,26 @@ class Organisation(models.Model):
         return reverse('organisation:update', args=[str(self.id)])
 
     def save(self, *args, **kwargs):
+        create = not self.pk
+        super(Organisation, self).save(*args, *kwargs)
 
-        return super(Organisation, self).save(*args, *kwargs)
+        if create:
+            # create in cdms
+            from cdms_api import api
+
+            data = {}
+            for field in self._meta.fields:
+                field_name = field.name
+                mapping = CDMS_FIELD_MAPPING.get(field_name)
+                if not mapping:
+                    continue
+
+                cdms_field, mapping_func = (mapping, (lambda x: x)) if not isinstance(mapping, tuple) else mapping
+
+                value = mapping_func(getattr(self, field_name))
+
+                data[cdms_field] = value
+
+            result = api.create('Account', data=data)['d']
+            self.cdms_pk = result['AccountId']
+            self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
