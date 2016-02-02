@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.urlresolvers import reverse
 
+from model_utils.models import TimeStampedModel
+
 from .managers import OrganisationManager
 
 CDMS_FIELD_MAPPING = {
@@ -19,7 +21,7 @@ CDMS_FIELD_MAPPING = {
 }
 
 
-class Organisation(models.Model):
+class Organisation(TimeStampedModel):
     name = models.CharField(max_length=255)
     alias = models.CharField(max_length=255, blank=True)
 
@@ -64,14 +66,14 @@ class Organisation(models.Model):
 
     def save(self, *args, **kwargs):
         create = not self.pk
-        super(Organisation, self).save(*args, *kwargs)
 
-        if create:
-            # create in cdms
-            from cdms_api import api
+        from cdms_api import api
+        import datetime
+        import re
 
-            data = {}
-            for field in self._meta.fields:
+        def update_cdms_data_from_local(organisation, data):
+            cdms_data = dict(data)
+            for field in organisation._meta.fields:
                 field_name = field.name
                 mapping = CDMS_FIELD_MAPPING.get(field_name)
                 if not mapping:
@@ -79,10 +81,43 @@ class Organisation(models.Model):
 
                 cdms_field, mapping_func = (mapping, (lambda x: x)) if not isinstance(mapping, tuple) else mapping
 
-                value = mapping_func(getattr(self, field_name))
+                value = mapping_func(getattr(organisation, field_name))
 
-                data[cdms_field] = value
+                cdms_data[cdms_field] = value
+            return cdms_data
 
-            result = api.create('Account', data=data)['d']
-            self.cdms_pk = result['AccountId']
+        if create:
+            # save this
+            super(Organisation, self).save(*args, *kwargs)
+
+            # create in cdms
+            cdms_data = update_cdms_data_from_local(self, {})
+
+            cdms_organisation = api.create('Account', data=cdms_data)
+            self.cdms_pk = cdms_organisation['AccountId']
             self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
+        else:
+            # get from cdms
+            cdms_data = api.get('Account', self.cdms_pk)
+
+            # dates from CDMS are in UTC
+            cdms_modified_on = int(re.search('/Date\(([-+]?\d+)\)/', cdms_data['ModifiedOn']).group(1))
+            cdms_modified_on = datetime.datetime.fromtimestamp(cdms_modified_on / 1000)
+            cdms_modified_on = cdms_modified_on.replace(tzinfo=datetime.timezone.utc)
+
+            last_self_modified_on = self.modified
+
+            if abs(cdms_modified_on - last_self_modified_on).total_seconds() > 2:  # if > 2 secs
+                # TODO: somebody modified CDMS record after getting this obj
+                # we need to deal with it somehow
+                raise Exception()
+
+            # save this
+            super(Organisation, self).save(*args, *kwargs)
+
+            del cdms_data['optevia_LastVerified']
+            del cdms_data['ModifiedOn']
+            del cdms_data['CreatedOn']
+
+            cdms_data = update_cdms_data_from_local(self, cdms_data)
+            cdms_organisation = api.update('Account', guid=self.cdms_pk, data=cdms_data)

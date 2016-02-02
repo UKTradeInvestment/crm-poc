@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <a href="{% url 'organisation:create' %}">Create</a>
+
+  <div class="">
+    <h2>List</h2>
+    <ul>
+      {% for org in organisations %}
+        <li><a href="{% url 'organisation:update' org.pk %}">{{org.name}}</a></li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

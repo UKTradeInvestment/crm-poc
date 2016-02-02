@@ -104,7 +104,7 @@ class CDMSApi(object):
         resp = getattr(self.session, verb)(url, data=data, headers=headers, verify=False)
 
         if resp.status_code in (200, 201):
-            return resp.json()
+            return resp.json()['d']
         return resp
 
     def list(self, service, top=50, skip=0, select=None, filters=None, orderby=None):

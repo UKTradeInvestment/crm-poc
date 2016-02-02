@@ -1,16 +1,19 @@
-from django.views.generic import TemplateView
+from django.views.generic import ListView
 from django.views.generic.edit import CreateView, UpdateView
-from django.shortcuts import render
 
 from .models import Organisation
 
 
-class Index(TemplateView):
-    template_name = 'organisation/index.html'
-
-
-class Create(CreateView):
+class OrganisationMixin(object):
     model = Organisation
+    context_object_name = 'organisation'
+
+
+class Index(OrganisationMixin, ListView):
+    context_object_name = 'organisations'
+
+
+class Create(OrganisationMixin, CreateView):
     fields = [
         'name', 'alias',
         'uk_organisation', 'country',
@@ -18,11 +21,9 @@ class Create(CreateView):
         'country_code', 'area_code', 'phone_number',
         'email_address', 'sector'
     ]
-    context_object_name = 'organisation'
 
 
-class Update(UpdateView):
-    model = Organisation
+class Update(OrganisationMixin, UpdateView):
     fields = [
         'name', 'alias',
         'uk_organisation', 'country',
@@ -30,4 +31,3 @@ class Update(UpdateView):
         'country_code', 'area_code', 'phone_number',
         'email_address', 'sector'
     ]
-    context_object_name = 'organisation'
