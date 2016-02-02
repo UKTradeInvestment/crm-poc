@@ -5,6 +5,7 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^demo/', include('demo.urls')),
+    url(r'^organisation/', include('organisation.urls', namespace='organisation')),
 
     url(r'^admin/', include(admin.site.urls)),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

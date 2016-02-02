@@ -30,6 +30,7 @@ INSTALLED_APPS = (
 )
 
 PROJECT_APPS = (
+    'organisation',
     'demo',
 )
 
