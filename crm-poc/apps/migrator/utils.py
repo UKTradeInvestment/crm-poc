@@ -33,6 +33,29 @@ def update_local_from_cdms_data(local_obj, cdms_data):
     return local_obj
 
 
+def get_conflicting_fields(local_obj, cdms_data):
+    """
+    Returns the list of fields conflicting between local_obj and cdms_data.
+    """
+    conflicting_fields = {}
+    for field in local_obj._meta.fields:
+        field_name = field.name
+        mapping = local_obj.CDMS_FIELD_MAPPING.get(field_name)
+        if not mapping:
+            continue
+
+        cdms_field, _, mapping_func = (mapping, None, (lambda x: x)) if not isinstance(mapping, tuple) else mapping
+        cdms_value = mapping_func(cdms_data[cdms_field])
+        local_value = getattr(local_obj, field_name)
+
+        if cdms_value != local_value:
+            conflicting_fields[field_name] = {
+                'theirs': cdms_value,
+                'yours': local_value
+            }
+    return conflicting_fields
+
+
 def parse_cdms_date(val):
     # dates from CDMS are in UTC
     parsed_val = int(re.search('/Date\(([-+]?\d+)\)/', val).group(1))
