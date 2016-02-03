@@ -96,7 +96,7 @@ class CDMSApi(object):
         return session
 
     def _make_request(self, verb, url, data={}):
-        print('calling url %s' % url)
+        print('calling (%s) on %s' % (verb, url))
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
 
         if data:
@@ -135,12 +135,20 @@ class CDMSApi(object):
         )
         return self._make_request('get', url)
 
+    def _cleanup_data_before_changes(self, cdms_data):
+        del cdms_data['optevia_LastVerified']
+        del cdms_data['ModifiedOn']
+        del cdms_data['CreatedOn']
+
+        return cdms_data
+
     def update(self, service, guid, data):
         url = "{base_url}/{service}Set(guid'{guid}')".format(
             base_url=self.CRM_REST_BASE_URL,
             service=service,
             guid=guid
         )
+        data = self._cleanup_data_before_changes(data)
         return self._make_request('put', url, data=data)
 
     def create(self, service, data):
