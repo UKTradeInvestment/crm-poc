@@ -8,6 +8,8 @@ from django.utils.text import slugify
 
 from pyquery import PyQuery
 
+from .exceptions import CDMSException
+
 CRM_BASE_URL = settings.CDMS_BASE_URL
 
 COOKIE_FILE = '/tmp/cdms_cookie_{slug}.tmp'.format(
@@ -103,8 +105,15 @@ class CDMSApi(object):
             data = json.dumps(data)
         resp = getattr(self.session, verb)(url, data=data, headers=headers, verify=False)
 
+        if resp.status_code >= 400:
+            raise CDMSException(
+                message=resp.content,
+                status_code=resp.status_code
+            )
+
         if resp.status_code in (200, 201):
             return resp.json()['d']
+
         return resp
 
     def list(self, service, top=50, skip=0, select=None, filters=None, orderby=None):
