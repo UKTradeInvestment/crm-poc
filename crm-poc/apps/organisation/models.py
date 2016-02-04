@@ -4,6 +4,8 @@ from django.core.urlresolvers import reverse
 from core.models import CRMBaseModel
 from core.managers import CRMQuerySet
 
+from .cdms_migrator import OrganisationMigrator
+
 
 class Organisation(CRMBaseModel):
     name = models.CharField(max_length=255)
@@ -39,23 +41,7 @@ class Organisation(CRMBaseModel):
     )
 
     objects = CRMQuerySet.as_manager()
-
-    # migration settings
-    CDMS_FIELD_MAPPING = {
-        'name': 'Name',
-        'alias': 'optevia_Alias',
-        'uk_organisation': 'optevia_ukorganisation',
-        'country': ('optevia_Country', lambda x: {'Id': x}, lambda x: x['Id']),
-        'postcode': 'optevia_PostCode',
-        'address1': 'optevia_Address1',
-        'uk_region': ('optevia_UKRegion', lambda x: {'Id': x}, lambda x: x['Id']),
-        'country_code': 'optevia_CountryCode',
-        'area_code': 'optevia_AreaCode',
-        'phone_number': 'optevia_TelephoneNumber',
-        'email_address': 'EMailAddress1',
-        'sector': ('optevia_Sector', lambda x: {'Id': x}, lambda x: x['Id']),
-    }
-    CDMS_SERVICE = 'Account'
+    cdms_migrator = OrganisationMigrator()
 
     def __str__(self):
         return self.name
