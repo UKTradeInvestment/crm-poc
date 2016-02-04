@@ -18,7 +18,7 @@ class Create(OrganisationMixin, CreateView):
     fields = [
         'name', 'alias',
         'uk_organisation', 'country',
-        'postcode', 'address1', 'uk_region',
+        'postcode', 'address1', 'city', 'uk_region',
         'country_code', 'area_code', 'phone_number',
         'email_address', 'sector'
     ]
@@ -28,7 +28,7 @@ class Update(OrganisationMixin, UpdateView):
     fields = [
         'name', 'alias',
         'uk_organisation', 'country',
-        'postcode', 'address1', 'uk_region',
+        'postcode', 'address1', 'city', 'uk_region',
         'country_code', 'area_code', 'phone_number',
         'email_address', 'sector'
     ]
