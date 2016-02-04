@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block h1 %}Delete {{ organisation }}{% endblock h1 %}
+
+{% block content %}
+  <form action="" method="post">{% csrf_token %}
+      <p>Are you sure you want to delete "{{ object }}"?</p>
+      <p>
+        <strong>Please note that deletes take a long time.</strong>
+      </p>
+      <input type="submit" value="Confirm" />
+      <a href="{% url 'organisation:update' organisation.pk %}">Cancel</a>
+  </form>
+{% endblock %}

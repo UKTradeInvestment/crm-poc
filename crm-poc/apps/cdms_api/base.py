@@ -166,3 +166,11 @@ class CDMSApi(object):
             service=service
         )
         return self._make_request('post', url, data=data)
+
+    def delete(self, service, guid):
+        url = "{base_url}/{service}Set(guid'{guid}')".format(
+            base_url=self.CRM_REST_BASE_URL,
+            service=service,
+            guid=guid
+        )
+        return self._make_request('delete', url)

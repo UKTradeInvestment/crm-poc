@@ -76,6 +76,12 @@ class CDMSModel(TimeStampedModel):
                 cdms_data = update_cdms_data_from_local(self, cdms_data)
                 cdms_obj = api.update(self.CDMS_SERVICE, guid=self.cdms_pk, data=cdms_data)
 
+    def delete(self, *args, **kwargs):
+        with transaction.atomic():
+            super(CDMSModel, self).delete(*args, **kwargs)
+
+            api.delete(self.CDMS_SERVICE, guid=self.cdms_pk)
+
     def sync_from_cdms(self):
         with transaction.atomic():
             # get from cdms
