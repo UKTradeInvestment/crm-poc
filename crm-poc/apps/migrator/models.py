@@ -17,10 +17,25 @@ class CDMSModel(TimeStampedModel):
     def save_without_cdms(self, *args, **kwargs):
         super(CDMSModel, self).save(*args, **kwargs)
 
+    def _get_cdms_obj(self):
+        if not self.pk:
+            return (None, False, None)
+
+        cdms_data = api.get(self.cdms_migrator.service, self.cdms_pk)
+        cdms_modified_on = parse_cdms_date(cdms_data['ModifiedOn'])
+
+        change_delta = (cdms_modified_on - self.modified).total_seconds()
+
+        if change_delta < -2:
+            raise Exception('Django Model changed without being syncronised to CDMS, this should not happen')
+
+        changed = change_delta > 2
+        return (cdms_data, changed, cdms_modified_on)
+
     def clean(self):
         super(CDMSModel, self).clean()
 
-        cdms_data, changed = self._get_cdms_obj()
+        cdms_data, changed, _ = self._get_cdms_obj()
         if changed:
             # this shouldn't happen often as django 'gets' the object
             # at each request and when we get, we update as well so
@@ -34,21 +49,6 @@ class CDMSModel(TimeStampedModel):
                         yours=conflicting_data['yours']
                     ) for field, conflicting_data in conflicting_fields.items()
                 })
-
-    def _get_cdms_obj(self):
-        if not self.pk:
-            return (None, False)
-
-        cdms_data = api.get(self.cdms_migrator.service, self.cdms_pk)
-        cdms_modified_on = parse_cdms_date(cdms_data['ModifiedOn'])
-
-        change_delta = (cdms_modified_on - self.modified).total_seconds()
-
-        if change_delta < -2:
-            raise Exception('Django Model changed without being syncronised to CDMS, this should not happen')
-
-        changed = change_delta > 2
-        return (cdms_data, changed)
 
     def save(self, *args, **kwargs):
         with transaction.atomic():
@@ -64,7 +64,7 @@ class CDMSModel(TimeStampedModel):
                 self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
             else:
                 # get from cdms
-                cdms_data, changed = self._get_cdms_obj()
+                cdms_data, changed, _ = self._get_cdms_obj()
                 if changed:
                     # should never happen if self.clean called before saving
                     raise Exception()
@@ -84,13 +84,15 @@ class CDMSModel(TimeStampedModel):
     def sync_from_cdms(self):
         with transaction.atomic():
             # get from cdms
-            cdms_data, changed = self._get_cdms_obj()
+            cdms_data, changed, cdms_modified_on = self._get_cdms_obj()
             if not cdms_data or not changed:
                 return False
 
             self.cdms_migrator.update_local_from_cdms_data(self, cdms_data)
             self.save_without_cdms()
-            api.update(self.cdms_migrator.service, guid=self.cdms_pk, data=cdms_data)
+
+            self.modified = cdms_modified_on
+            self.__class__.objects.filter(pk=self.pk).update(modified=cdms_modified_on)
             return True
 
     class Meta:
