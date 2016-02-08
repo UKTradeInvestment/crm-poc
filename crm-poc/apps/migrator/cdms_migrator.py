@@ -1,15 +1,24 @@
+from .exceptions import NotMappingFieldException
+
+
 class BaseCDMSMigrator(object):
     fields = {}
     service = None
 
+    def get_fields_mapping(self, field_name):
+        mapping = self.fields.get(field_name)
+        if not mapping:
+            raise NotMappingFieldException()
+
+        return (mapping, (lambda x: x), (lambda x: x)) if not isinstance(mapping, tuple) else mapping
+
     def update_cdms_data_from_local(self, local_obj, cdms_data):
         for field in local_obj._meta.fields:
             field_name = field.name
-            mapping = self.fields.get(field_name)
-            if not mapping:
+            try:
+                cdms_field, mapping_func, _ = self.get_fields_mapping(field_name)
+            except NotMappingFieldException:
                 continue
-
-            cdms_field, mapping_func, _ = (mapping, (lambda x: x), None) if not isinstance(mapping, tuple) else mapping
 
             value = mapping_func(getattr(local_obj, field_name))
 
@@ -19,11 +28,10 @@ class BaseCDMSMigrator(object):
     def update_local_from_cdms_data(self, local_obj, cdms_data):
         for field in local_obj._meta.fields:
             field_name = field.name
-            mapping = self.fields.get(field_name)
-            if not mapping:
+            try:
+                cdms_field, _, mapping_func = self.get_fields_mapping(field_name)
+            except NotMappingFieldException:
                 continue
-
-            cdms_field, _, mapping_func = (mapping, None, (lambda x: x)) if not isinstance(mapping, tuple) else mapping
 
             value = mapping_func(cdms_data[cdms_field])
 

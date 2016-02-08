@@ -15,6 +15,7 @@ SECRET_KEY = 'CHANGE THIS!!!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+IN_TESTING = sys.argv[1:2] == ['test']
 
 ALLOWED_HOSTS = []
 

@@ -106,6 +106,7 @@ class CDMSApi(object):
         resp = getattr(self.session, verb)(url, data=data, headers=headers, verify=False)
 
         if resp.status_code >= 400:
+            print(resp.content)
             raise CDMSException(
                 message=resp.content,
                 status_code=resp.status_code
@@ -132,9 +133,10 @@ class CDMSApi(object):
             service=service,
             top=top,
             skip=skip,
-            params='&'.join([u'%s=%s' % (k, v) for k, v in params])
+            params='&'.join([u'%s=%s' % (k, v) for k, v in params.items()])
         )
-        return self._make_request('get', url)
+        results = self._make_request('get', url)
+        return results['results']
 
     def get(self, service, guid):
         url = "{base_url}/{service}Set(guid'{guid}')".format(

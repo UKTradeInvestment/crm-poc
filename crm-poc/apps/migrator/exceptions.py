@@ -1,0 +1,2 @@
+class NotMappingFieldException(Exception):
+    pass

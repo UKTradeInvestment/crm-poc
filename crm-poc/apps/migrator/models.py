@@ -30,7 +30,7 @@ class CDMSModel(TimeStampedModel):
             raise Exception('Django Model changed without being syncronised to CDMS, this should not happen')
 
         changed = change_delta > 2
-        return (cdms_data, changed, cdms_modified_on)
+        return cdms_data, changed, cdms_modified_on
 
     def clean(self):
         super(CDMSModel, self).clean()
@@ -54,12 +54,13 @@ class CDMSModel(TimeStampedModel):
         with transaction.atomic():
             if not self.pk:
                 # save this
-                super(CDMSModel, self).save(*args, *kwargs)
+                super(CDMSModel, self).save(*args, **kwargs)
 
                 # create in cdms
                 cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, {})
 
                 cdms_obj = api.create(self.cdms_migrator.service, data=cdms_data)
+
                 self.cdms_pk = cdms_obj['{service}Id'.format(service=self.cdms_migrator.service)]
                 self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
             else:
@@ -70,7 +71,7 @@ class CDMSModel(TimeStampedModel):
                     raise Exception()
 
                 # save this
-                super(CDMSModel, self).save(*args, *kwargs)
+                super(CDMSModel, self).save(*args, **kwargs)
 
                 cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, cdms_data)
                 cdms_obj = api.update(self.cdms_migrator.service, guid=self.cdms_pk, data=cdms_data)

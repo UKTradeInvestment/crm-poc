@@ -7,6 +7,19 @@ from core.managers import CRMQuerySet
 from .cdms_migrator import OrganisationMigrator
 
 
+COUNTRY_CHOICES = (
+    ('80756b9a-5d95-e211-a939-e4115bead28a', 'United Kingdom'),
+)
+
+UK_REGION_CHOICES = (
+    ('874cd12a-6095-e211-a939-e4115bead28a', 'London'),
+)
+
+SECTOR_CHOICES = (
+    ('a538cecc-5f95-e211-a939-e4115bead28a', 'Food & Drink'),
+)
+
+
 class Organisation(CRMBaseModel):
     name = models.CharField(max_length=255)
     alias = models.CharField(max_length=255, blank=True)
@@ -14,18 +27,14 @@ class Organisation(CRMBaseModel):
     uk_organisation = models.BooleanField(default=True)
     country = models.CharField(
         max_length=255,
-        choices=(
-            ('80756b9a-5d95-e211-a939-e4115bead28a', 'United Kingdom'),
-        )
+        choices=COUNTRY_CHOICES
     )
     postcode = models.CharField(max_length=255)
     address1 = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
     uk_region = models.CharField(
         max_length=255,
-        choices=(
-            ('874cd12a-6095-e211-a939-e4115bead28a', 'London'),
-        )
+        choices=UK_REGION_CHOICES
     )
 
     country_code = models.CharField(max_length=255)
@@ -36,9 +45,7 @@ class Organisation(CRMBaseModel):
 
     sector = models.CharField(
         max_length=255,
-        choices=(
-            ('a538cecc-5f95-e211-a939-e4115bead28a', 'Food & Drink'),
-        )
+        choices=SECTOR_CHOICES
     )
 
     objects = CRMQuerySet.as_manager()
