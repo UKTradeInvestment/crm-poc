@@ -50,31 +50,31 @@ class CDMSModel(TimeStampedModel):
                     ) for field, conflicting_data in conflicting_fields.items()
                 })
 
-    def save(self, *args, **kwargs):
-        with transaction.atomic():
-            if not self.pk:
+    # def save(self, *args, **kwargs):
+    #     super(CDMSModel, self).save(*args, **kwargs)
+        # with transaction.atomic():
+        #     if not self.pk:
                 # save this
-                super(CDMSModel, self).save(*args, **kwargs)
-
-                # create in cdms
-                cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, {})
-
-                cdms_obj = api.create(self.cdms_migrator.service, data=cdms_data)
-
-                self.cdms_pk = cdms_obj['{service}Id'.format(service=self.cdms_migrator.service)]
-                self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
-            else:
+                #
+                # # create in cdms
+                # cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, {})
+                #
+                # cdms_obj = api.create(self.cdms_migrator.service, data=cdms_data)
+                #
+                # self.cdms_pk = cdms_obj['{service}Id'.format(service=self.cdms_migrator.service)]
+                # self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
+            # else:
                 # get from cdms
-                cdms_data, changed, _ = self._get_cdms_obj()
-                if changed:
-                    # should never happen if self.clean called before saving
-                    raise Exception()
-
-                # save this
-                super(CDMSModel, self).save(*args, **kwargs)
-
-                cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, cdms_data)
-                cdms_obj = api.update(self.cdms_migrator.service, guid=self.cdms_pk, data=cdms_data)
+                # cdms_data, changed, _ = self._get_cdms_obj()
+                # if changed:
+                #     # should never happen if self.clean called before saving
+                #     raise Exception()
+                #
+                # # save this
+                # super(CDMSModel, self).save(*args, **kwargs)
+                #
+                # cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, cdms_data)
+                # cdms_obj = api.update(self.cdms_migrator.service, guid=self.cdms_pk, data=cdms_data)
 
     def delete(self, *args, **kwargs):
         with transaction.atomic():

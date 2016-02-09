@@ -14,6 +14,9 @@ class CDMSCompiler(object):
     def __init__(self, query):
         self.query = query
 
+    def get_service(self):
+        return self.query.model.cdms_migrator.service
+
     def execute(self):
         raise NotImplementedError()
 
@@ -49,7 +52,32 @@ class CDMSSelectCompiler(CDMSCompiler):
             cdms_filters.append(
                 cdms_expr.format(field=field, value=self.convert_value(value))
             )
-        return cdms_conn.list(self.query.model.cdms_migrator.service, filters=cdms_filters)
+        return cdms_conn.list(self.get_service(), filters=cdms_filters)
+
+
+class CDMSInsertCompiler(CDMSCompiler):
+    def execute(self):
+        results = cdms_conn.create(
+            self.get_service(), data=self.query.cdms_data
+        )
+        return results['{service}Id'.format(service=self.get_service())]
+
+
+class CDMSGetCompiler(CDMSCompiler):
+    def execute(self):
+        return cdms_conn.get(
+            self.get_service(),
+            guid=self.query.cdms_pk
+        )
+
+
+class CDMSUpdateCompiler(CDMSCompiler):
+    def execute(self):
+        return cdms_conn.update(
+            self.get_service(),
+            guid=self.query.cdms_pk,
+            data=self.query.cdms_data
+        )
 
 
 class CDMSModelIterable(models.query.ModelIterable):
@@ -62,6 +90,8 @@ class CDMSModelIterable(models.query.ModelIterable):
 
 
 class CDMSQuery(object):
+    compiler = CDMSCompiler
+
     def __init__(self, model):
         self.model = model
 
@@ -277,3 +307,47 @@ class CDMSQuery(object):
             """
 
         return value, lookups
+
+    def get_compiler(self):
+        return self.compiler(query=self)
+
+
+class GetQuery(CDMSQuery):
+    compiler = CDMSGetCompiler
+
+    def __init__(self, *args, **kwargs):
+        super(GetQuery, self).__init__(*args, **kwargs)
+        self.cdms_pk = None
+
+    def set_cdms_pk(self, cdms_pk):
+        self.cdms_pk = cdms_pk
+
+
+class InsertQuery(CDMSQuery):
+    compiler = CDMSInsertCompiler
+
+    def __init__(self, *args, **kwargs):
+        super(InsertQuery, self).__init__(*args, **kwargs)
+        self.cdms_data = {}
+
+    def insert_value(self, obj):
+        self.cdms_data = self.model.cdms_migrator.update_cdms_data_from_local(obj, {})
+
+
+class UpdateQuery(CDMSQuery):
+    compiler = CDMSUpdateCompiler
+
+    def __init__(self, *args, **kwargs):
+        super(UpdateQuery, self).__init__(*args, **kwargs)
+        self.cdms_pk = None
+        self.cdms_data = {}
+
+    def get_cdms_obj(self):
+        query = GetQuery(self.model)
+        query.set_cdms_pk(self.cdms_pk)
+        return query.get_compiler().execute()
+
+    def add_update_fields(self, cdms_pk, values):
+        self.cdms_pk = cdms_pk
+        cdms_data = self.get_cdms_obj()
+        self.cdms_data = self.model.cdms_migrator.update_cdms_data_from_values(values, cdms_data)

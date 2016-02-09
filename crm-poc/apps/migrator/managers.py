@@ -1,7 +1,7 @@
 from django.db import models
 from django.db.models.query_utils import Q
 
-from .query import CDMSQuery, CDMSModelIterable
+from .query import CDMSQuery, CDMSModelIterable, InsertQuery, UpdateQuery
 
 
 class CDMSQuerySet(models.QuerySet):
@@ -54,7 +54,51 @@ class CDMSQuerySet(models.QuerySet):
         return super(CDMSQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
 
     def _insert(self, objs, fields, return_id=False, raw=False, using=None):
-        return super(CDMSQuerySet, self)._insert(objs, fields, return_id=return_id, raw=raw, using=using)
+        return_val = super(CDMSQuerySet, self)._insert(objs, fields, return_id=return_id, raw=raw, using=using)
+
+        if not self.cdms_skip:
+            if not return_id or len(objs) > 1:
+                raise NotImplementedError(
+                    'Bulk create not implemented yet'
+                )
+
+            # insert in cdms
+            obj = objs[0]
+            query = InsertQuery(self.model)
+            query.insert_value(obj)
+            cdms_pk = query.get_compiler().execute()
+
+            # update cdms_pk local
+            # TODO make sure the cdms update doesn't happen
+            obj.cdms_pk = cdms_pk
+            self.filter(pk=return_val).update(cdms_pk=cdms_pk)
+
+        return return_val
+
+    def _update(self, values):
+        return_val = super(CDMSQuerySet, self)._update(values)
+
+        if not self.cdms_skip:
+            model_values = []
+            cdms_pk = None
+            for field, _, value in values:
+                if field.name == 'cdms_pk':
+                    cdms_pk = value
+                else:
+                    model_values.append(
+                        (field, value)
+                    )
+
+            if not cdms_pk:
+                raise NotImplementedError(
+                    'Cannot update without cdms pk'
+                )
+
+            query = UpdateQuery(self.model)
+            query.add_update_fields(cdms_pk, model_values)
+            query.get_compiler().execute()
+
+        return return_val
 
     # def test(self):
     #     results = cdms_conn.list('detica_omisorder', top=1, filters=[

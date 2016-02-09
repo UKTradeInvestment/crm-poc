@@ -1,6 +1,6 @@
 from unittest import mock
 from model_mommy import mommy
-from django.test.testcases import TestCase
+from django.test.testcases import TransactionTestCase
 
 from cdms_api.utils import mocked_cdms_create, mocked_cdms_get
 
@@ -8,12 +8,17 @@ from ..models import Organisation
 from ..models import COUNTRY_CHOICES, UK_REGION_CHOICES, SECTOR_CHOICES
 
 
-class BaseOrgSyncTestCase(TestCase):
+class BaseOrgSyncTestCase(TransactionTestCase):
     @mock.patch('migrator.models.api')
-    def __call__(self, result, mocked_api, *args, **kwargs):
+    @mock.patch('migrator.query.cdms_conn')
+    def __call__(self, result, mocked_cdms_conn, mocked_api, *args, **kwargs):
         mocked_api.create.side_effect = mocked_cdms_create
         mocked_api.get.side_effect = mocked_cdms_get
         self.mocked_api = mocked_api
+
+        mocked_cdms_conn.create.side_effect = mocked_cdms_create
+        mocked_cdms_conn.get.side_effect = mocked_cdms_get
+        self.mocked_cdms_conn = mocked_cdms_conn
         super(BaseOrgSyncTestCase, self).__call__(result, *args, **kwargs)
 
 
@@ -61,9 +66,9 @@ class CreateTestCase(BaseOrgSyncTestCase):
         self.assertEqual(Organisation.objects.count(), 1)
 
         # assert cdms call
-        self.assertEqual(self.mocked_api.create.call_count, 1)
-        service = self.mocked_api.create.call_args[0][0]
-        data = self.mocked_api.create.call_args[1]['data']
+        self.assertEqual(self.mocked_cdms_conn.create.call_count, 1)
+        service = self.mocked_cdms_conn.create.call_args[0][0]
+        data = self.mocked_cdms_conn.create.call_args[1]['data']
         self.assertEqual(service, 'Account')
         self.assertDictEqual(data, cdms_data)
 
@@ -71,7 +76,7 @@ class CreateTestCase(BaseOrgSyncTestCase):
         self.assertEqual(obj.cdms_pk, 'new cdms pk')
 
     def test_create_failure(self):
-        self.mocked_api.create.side_effect = Exception
+        self.mocked_cdms_conn.create.side_effect = Exception
 
         obj, cdms_data = self.get_org_data()
 
@@ -84,6 +89,7 @@ class UpdateTestCase(BaseOrgSyncTestCase):
 
     def test_update_success(self):
         obj = mommy.make(Organisation)
+        self.mocked_cdms_conn.reset_mock()
 
         self.assertEqual(Organisation.objects.count(), 1)
         obj.name = 'Updated name'
@@ -91,18 +97,18 @@ class UpdateTestCase(BaseOrgSyncTestCase):
         self.assertEqual(Organisation.objects.count(), 1)
 
         # assert cdms call
-        self.assertEqual(self.mocked_api.update.call_count, 1)
+        self.assertEqual(self.mocked_cdms_conn.update.call_count, 1)
 
-        service = self.mocked_api.update.call_args[0][0]
-        guid = self.mocked_api.update.call_args[1]['guid']
-        data = self.mocked_api.update.call_args[1]['data']
+        service = self.mocked_cdms_conn.update.call_args[0][0]
+        guid = self.mocked_cdms_conn.update.call_args[1]['guid']
+        data = self.mocked_cdms_conn.update.call_args[1]['data']
 
         self.assertEqual(service, 'Account')
         self.assertEqual(guid, obj.cdms_pk)
         self.assertEqual(data['Name'], obj.name)
 
     def test_update_failure(self):
-        self.mocked_api.update.side_effect = Exception
+        self.mocked_cdms_conn.update.side_effect = Exception
 
         obj = mommy.make(Organisation)
 

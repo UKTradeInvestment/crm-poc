@@ -13,15 +13,20 @@ class BaseCDMSMigrator(object):
         return (mapping, (lambda x: x), (lambda x: x)) if not isinstance(mapping, tuple) else mapping
 
     def update_cdms_data_from_local(self, local_obj, cdms_data):
-        for field in local_obj._meta.fields:
+        values = [
+            (field, getattr(local_obj, field.name)) for field in local_obj._meta.fields
+        ]
+        return self.update_cdms_data_from_values(values, cdms_data)
+
+    def update_cdms_data_from_values(self, values, cdms_data):
+        for field, value in values:
             field_name = field.name
             try:
                 cdms_field, mapping_func, _ = self.get_fields_mapping(field_name)
             except NotMappingFieldException:
                 continue
 
-            value = mapping_func(getattr(local_obj, field_name))
-
+            value = mapping_func(value)
             cdms_data[cdms_field] = value
         return cdms_data
 
