@@ -21,7 +21,7 @@ class CDMSModel(TimeStampedModel):
         if not self.pk:
             return (None, False, None)
 
-        cdms_data = api.get(self.cdms_migrator.service, self.cdms_pk)
+        cdms_data = api.get(self.cdms_migrator.service, guid=self.cdms_pk)
         cdms_modified_on = parse_cdms_date(cdms_data['ModifiedOn'])
 
         change_delta = (cdms_modified_on - self.modified).total_seconds()

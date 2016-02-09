@@ -1,11 +1,14 @@
+import datetime
 from unittest import mock
 from model_mommy import mommy
 from django.test.testcases import TransactionTestCase
+from django.utils import timezone
 
 from cdms_api.utils import mocked_cdms_create, mocked_cdms_get
 
 from ..models import Organisation
-from ..models import COUNTRY_CHOICES, UK_REGION_CHOICES, SECTOR_CHOICES
+
+from .base import get_sample_organisation, get_sample_cdms_organisation
 
 
 class BaseOrgSyncTestCase(TransactionTestCase):
@@ -13,50 +16,21 @@ class BaseOrgSyncTestCase(TransactionTestCase):
     @mock.patch('migrator.query.cdms_conn')
     def __call__(self, result, mocked_cdms_conn, mocked_api, *args, **kwargs):
         mocked_api.create.side_effect = mocked_cdms_create
-        mocked_api.get.side_effect = mocked_cdms_get
+        mocked_api.get.side_effect = mocked_cdms_get()
         self.mocked_api = mocked_api
 
         mocked_cdms_conn.create.side_effect = mocked_cdms_create
-        mocked_cdms_conn.get.side_effect = mocked_cdms_get
+        mocked_cdms_conn.get.side_effect = mocked_cdms_get()
         self.mocked_cdms_conn = mocked_cdms_conn
         super(BaseOrgSyncTestCase, self).__call__(result, *args, **kwargs)
 
 
 class CreateTestCase(BaseOrgSyncTestCase):
     def get_org_data(self):
-        obj = Organisation(
-            name='name',
-            alias='alias',
-            uk_organisation=True,
-            country=COUNTRY_CHOICES[0][0],
-            postcode='postcode',
-            address1='address1',
-            city='city',
-            uk_region=UK_REGION_CHOICES[0][0],
-            country_code='country code',
-            area_code='area code',
-            phone_number='phone number',
-            email_address='email address',
-            sector=SECTOR_CHOICES[0][0]
+        return (
+            get_sample_organisation(),
+            get_sample_cdms_organisation()
         )
-
-        cdms_data = {
-            'EMailAddress1': 'email address',
-            'optevia_AreaCode': 'area code',
-            'optevia_PAFOverride': True,
-            'optevia_ukorganisation': True,
-            'optevia_PostCode': 'postcode',
-            'optevia_UKRegion': {'Id': UK_REGION_CHOICES[0][0]},
-            'optevia_Alias': 'alias',
-            'optevia_Sector': {'Id': SECTOR_CHOICES[0][0]},
-            'optevia_Address1': 'address1',
-            'optevia_TelephoneNumber': 'phone number',
-            'Name': 'name',
-            'optevia_Country': {'Id': COUNTRY_CHOICES[0][0]},
-            'optevia_TownCity': 'city',
-            'optevia_CountryCode': 'country code'
-        }
-        return obj, cdms_data
 
     def test_create_success(self):
         obj, cdms_data = self.get_org_data()
@@ -83,6 +57,59 @@ class CreateTestCase(BaseOrgSyncTestCase):
         self.assertEqual(Organisation.objects.count(), 0)
         self.assertRaises(Exception, obj.save)
         self.assertEqual(Organisation.objects.count(), 0)
+
+
+class GetTestCase(BaseOrgSyncTestCase):
+    def test_get_up_to_date(self):
+        """
+            - get from db
+            - get from cdms
+            - cdms not newer than db so db not updated
+        """
+        obj = mommy.make(Organisation, alias='value 1')
+        self.mocked_api.reset_mock()
+
+        obj = Organisation.objects.get(pk=obj.pk)
+        self.assertEqual(obj.alias, 'value 1')
+
+        # assert cdms call
+        self.assertEqual(self.mocked_api.get.call_count, 1)
+
+        service = self.mocked_api.get.call_args[0][0]
+        guid = self.mocked_api.get.call_args[1]['guid']
+
+        self.assertEqual(service, 'Account')
+        self.assertEqual(guid, obj.cdms_pk)
+
+    def test_get_out_of_date(self):
+        """
+            - get from db
+            - get from cdms
+            - cdms newer than db
+            - update db
+        """
+        self.mocked_api.get.side_effect = mocked_cdms_get(
+            data=get_sample_cdms_organisation({
+                'optevia_Alias': 'value 2'
+            })
+        )
+        obj = mommy.make(Organisation, alias='value 1')
+        Organisation.objects.filter(pk=obj.pk).update(
+            modified=timezone.now() - datetime.timedelta(hours=1)
+        )
+
+        self.mocked_api.reset_mock()
+
+        obj = Organisation.objects.get(pk=obj.pk)
+        self.assertEqual(obj.alias, 'value 2')
+
+        # assert cdms call
+        self.assertEqual(self.mocked_api.get.call_count, 1)
+        service = self.mocked_api.get.call_args[0][0]
+        guid = self.mocked_api.get.call_args[1]['guid']
+
+        self.assertEqual(service, 'Account')
+        self.assertEqual(guid, obj.cdms_pk)
 
 
 class UpdateTestCase(BaseOrgSyncTestCase):

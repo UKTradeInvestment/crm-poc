@@ -6,12 +6,17 @@ from django.utils import timezone
 from .base import CDMSApi
 
 
-def mocked_cdms_get(service, guid):
-    return {
-        'ModifiedOn': '/Date({dt})/'.format(
-            dt=int(time.mktime(timezone.now().timetuple()) * 1000)
-        )
-    }
+def mocked_cdms_get(modified_on=None, data={}):
+    def internal(service, guid):
+        modified = modified_on or timezone.now()
+        defaults = {
+            'ModifiedOn': '/Date({dt})/'.format(
+                dt=int(time.mktime(modified.timetuple()) * 1000)
+            )
+        }
+        defaults.update(data)
+        return defaults
+    return internal
 
 
 def mocked_cdms_create(service, data):
