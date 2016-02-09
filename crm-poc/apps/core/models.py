@@ -7,7 +7,7 @@ class CRMBaseModel(CDMSModel):
     just extend TimeStampedModel instead of CDMSModel and all the
     related logic goes away.
 
-    NOTE: to be used with core.models.CRMQuerySet.
+    NOTE: to be used with core.models.CRMManager.
     """
     class Meta:
         abstract = True

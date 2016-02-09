@@ -2,7 +2,7 @@ from django.db import models
 from django.core.urlresolvers import reverse
 
 from core.models import CRMBaseModel
-from core.managers import CRMQuerySet
+from core.managers import CRMManager
 
 from .cdms_migrator import OrganisationMigrator
 
@@ -48,7 +48,7 @@ class Organisation(CRMBaseModel):
         choices=SECTOR_CHOICES
     )
 
-    objects = CRMQuerySet.as_manager()
+    objects = CRMManager()
     cdms_migrator = OrganisationMigrator()
 
     def __str__(self):

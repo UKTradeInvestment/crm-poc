@@ -53,6 +53,9 @@ class CDMSQuerySet(models.QuerySet):
                 clone.cdms_query.add_q(q)
         return super(CDMSQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
 
+    def _insert(self, objs, fields, return_id=False, raw=False, using=None):
+        return super(CDMSQuerySet, self)._insert(objs, fields, return_id=return_id, raw=raw, using=using)
+
     # def test(self):
     #     results = cdms_conn.list('detica_omisorder', top=1, filters=[
     #         "CreatedOn ge datetime'2015-01-01T00:00:00'",
@@ -61,3 +64,7 @@ class CDMSQuerySet(models.QuerySet):
     #     ])
     #     aa = results['results'][0]
     #     import pdb; pdb.set_trace()
+
+
+class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):
+    pass
