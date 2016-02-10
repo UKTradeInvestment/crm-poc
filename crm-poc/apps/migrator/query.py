@@ -80,11 +80,33 @@ class CDMSUpdateCompiler(CDMSCompiler):
         )
 
 
+class CDMSRefreshCompiler(CDMSGetCompiler):
+    def execute(self):
+        # get cdms_obj
+        cdms_data = super(CDMSRefreshCompiler, self).execute()
+
+        migrator = self.query.model.cdms_migrator
+        obj = self.query.local_obj
+
+        # check if local obj has to be updated
+        changed, modified_on = migrator.has_cdms_obj_changed(obj, cdms_data)
+        if changed:
+            # 1st save for the fields
+            migrator.update_local_from_cdms_data(obj, cdms_data)
+            obj.save(cdms_skip=True)
+
+            # 2nd save for the modified field (this can be improved)
+            obj.modified = modified_on
+            obj.__class__.objects.filter(pk=obj.pk).update(modified=modified_on)
+
+        return obj
+
+
 class CDMSModelIterable(models.query.ModelIterable):
     def __iter__(self):
         if not self.queryset.cdms_skip:
             cdms_query = self.queryset.cdms_query
-            results = CDMSSelectCompiler(cdms_query).execute()
+            # results = CDMSSelectCompiler(cdms_query).execute()
 
         return super(CDMSModelIterable, self).__iter__()
 
@@ -351,3 +373,15 @@ class UpdateQuery(CDMSQuery):
         self.cdms_pk = cdms_pk
         cdms_data = self.get_cdms_obj()
         self.cdms_data = self.model.cdms_migrator.update_cdms_data_from_values(values, cdms_data)
+
+
+class RefreshQuery(GetQuery):
+    compiler = CDMSRefreshCompiler
+
+    def __init__(self, *args, **kwargs):
+        super(GetQuery, self).__init__(*args, **kwargs)
+        self.local_obj = None
+
+    def set_obj(self, obj):
+        self.set_cdms_pk(obj.cdms_pk)
+        self.local_obj = obj

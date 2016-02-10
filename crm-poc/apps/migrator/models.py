@@ -1,12 +1,9 @@
 from django.db import models
 from django.db import transaction
-from django.core.exceptions import ValidationError
 
 from model_utils.models import TimeStampedModel
 
 from cdms_api import api
-
-from .utils import parse_cdms_date
 
 
 class CDMSModel(TimeStampedModel):
@@ -14,6 +11,30 @@ class CDMSModel(TimeStampedModel):
 
     cdms_migrator = None  # should be subclass of migrator.cdms_migrator.BaseCDMSMigrator
 
+    def __init__(self, *args, **kwargs):
+        super(CDMSModel, self).__init__(*args, **kwargs)
+        self._cdms_skip = False
+
+    def save(self, *args, **kwargs):
+        # a bit hacky but it makes things work :-P
+        original_cdms_skip = self._cdms_skip
+        self._cdms_skip = kwargs.pop('cdms_skip', False)
+        try:
+            ret = super(CDMSModel, self).save(*args, **kwargs)
+        finally:
+            self._cdms_skip = original_cdms_skip
+
+        return ret
+
+    # def _do_insert(self, manager, using, fields, update_pk, raw):
+    #     return super(CDMSModel, self)._do_insert(manager, using, fields, update_pk, raw)
+
+    def _do_update(self, base_qs, using, pk_val, values, update_fields, forced_update):
+        if self._cdms_skip:
+            base_qs = base_qs.mark_as_cdms_skip()
+        return super(CDMSModel, self)._do_update(base_qs, using, pk_val, values, update_fields, forced_update)
+
+    """
     def save_without_cdms(self, *args, **kwargs):
         super(CDMSModel, self).save(*args, **kwargs)
 
@@ -50,31 +71,32 @@ class CDMSModel(TimeStampedModel):
                     ) for field, conflicting_data in conflicting_fields.items()
                 })
 
-    # def save(self, *args, **kwargs):
-    #     super(CDMSModel, self).save(*args, **kwargs)
-        # with transaction.atomic():
-        #     if not self.pk:
+    def save(self, *args, **kwargs):
+        super(CDMSModel, self).save(*args, **kwargs)
+        with transaction.atomic():
+            if not self.pk:
+                save this
+
+                # create in cdms
+                cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, {})
+
+                cdms_obj = api.create(self.cdms_migrator.service, data=cdms_data)
+
+                self.cdms_pk = cdms_obj['{service}Id'.format(service=self.cdms_migrator.service)]
+                self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
+            else:
+                get from cdms
+                cdms_data, changed, _ = self._get_cdms_obj()
+                if changed:
+                    # should never happen if self.clean called before saving
+                    raise Exception()
+
                 # save this
-                #
-                # # create in cdms
-                # cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, {})
-                #
-                # cdms_obj = api.create(self.cdms_migrator.service, data=cdms_data)
-                #
-                # self.cdms_pk = cdms_obj['{service}Id'.format(service=self.cdms_migrator.service)]
-                # self.__class__.objects.filter(pk=self.pk).update(cdms_pk=self.cdms_pk)
-            # else:
-                # get from cdms
-                # cdms_data, changed, _ = self._get_cdms_obj()
-                # if changed:
-                #     # should never happen if self.clean called before saving
-                #     raise Exception()
-                #
-                # # save this
-                # super(CDMSModel, self).save(*args, **kwargs)
-                #
-                # cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, cdms_data)
-                # cdms_obj = api.update(self.cdms_migrator.service, guid=self.cdms_pk, data=cdms_data)
+                super(CDMSModel, self).save(*args, **kwargs)
+
+                cdms_data = self.cdms_migrator.update_cdms_data_from_local(self, cdms_data)
+                cdms_obj = api.update(self.cdms_migrator.service, guid=self.cdms_pk, data=cdms_data)
+    """
 
     def delete(self, *args, **kwargs):
         with transaction.atomic():
@@ -82,6 +104,7 @@ class CDMSModel(TimeStampedModel):
 
             api.delete(self.cdms_migrator.service, guid=self.cdms_pk)
 
+    """
     def sync_from_cdms(self):
         with transaction.atomic():
             # get from cdms
@@ -95,6 +118,7 @@ class CDMSModel(TimeStampedModel):
             self.modified = cdms_modified_on
             self.__class__.objects.filter(pk=self.pk).update(modified=cdms_modified_on)
             return True
+    """
 
     class Meta:
         abstract = True

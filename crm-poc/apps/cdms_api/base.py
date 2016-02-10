@@ -98,7 +98,7 @@ class CDMSApi(object):
         return session
 
     def _make_request(self, verb, url, data={}):
-        print('calling (%s) on %s' % (verb, url))
+        print('****** calling (%s) on %s' % (verb, url))
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
 
         if data:

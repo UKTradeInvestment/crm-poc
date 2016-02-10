@@ -67,16 +67,16 @@ class GetTestCase(BaseOrgSyncTestCase):
             - cdms not newer than db so db not updated
         """
         obj = mommy.make(Organisation, alias='value 1')
-        self.mocked_api.reset_mock()
+        self.mocked_cdms_conn.reset_mock()
 
         obj = Organisation.objects.get(pk=obj.pk)
         self.assertEqual(obj.alias, 'value 1')
 
         # assert cdms call
-        self.assertEqual(self.mocked_api.get.call_count, 1)
+        self.assertEqual(self.mocked_cdms_conn.get.call_count, 1)
 
-        service = self.mocked_api.get.call_args[0][0]
-        guid = self.mocked_api.get.call_args[1]['guid']
+        service = self.mocked_cdms_conn.get.call_args[0][0]
+        guid = self.mocked_cdms_conn.get.call_args[1]['guid']
 
         self.assertEqual(service, 'Account')
         self.assertEqual(guid, obj.cdms_pk)
@@ -88,7 +88,7 @@ class GetTestCase(BaseOrgSyncTestCase):
             - cdms newer than db
             - update db
         """
-        self.mocked_api.get.side_effect = mocked_cdms_get(
+        self.mocked_cdms_conn.get.side_effect = mocked_cdms_get(
             data=get_sample_cdms_organisation({
                 'optevia_Alias': 'value 2'
             })
@@ -98,15 +98,15 @@ class GetTestCase(BaseOrgSyncTestCase):
             modified=timezone.now() - datetime.timedelta(hours=1)
         )
 
-        self.mocked_api.reset_mock()
+        self.mocked_cdms_conn.reset_mock()
 
         obj = Organisation.objects.get(pk=obj.pk)
         self.assertEqual(obj.alias, 'value 2')
 
         # assert cdms call
-        self.assertEqual(self.mocked_api.get.call_count, 1)
-        service = self.mocked_api.get.call_args[0][0]
-        guid = self.mocked_api.get.call_args[1]['guid']
+        self.assertEqual(self.mocked_cdms_conn.get.call_count, 1)
+        service = self.mocked_cdms_conn.get.call_args[0][0]
+        guid = self.mocked_cdms_conn.get.call_args[1]['guid']
 
         self.assertEqual(service, 'Account')
         self.assertEqual(guid, obj.cdms_pk)

@@ -1,14 +1,28 @@
 from .exceptions import NotMappingFieldException
+from .utils import parse_cdms_date
 
 
 class BaseCDMSMigrator(object):
     fields = {}
     service = None
 
+    def has_cdms_obj_changed(self, local_obj, cdms_data):
+        cdms_modified_on = parse_cdms_date(cdms_data['ModifiedOn'])
+
+        change_delta = (cdms_modified_on - local_obj.modified).total_seconds()
+
+        if change_delta < -2:
+            raise Exception('Django Model changed without being syncronised to CDMS, this should not happen')
+
+        changed = change_delta > 2
+        return changed, cdms_modified_on
+
     def get_fields_mapping(self, field_name):
         mapping = self.fields.get(field_name)
         if not mapping:
-            raise NotMappingFieldException()
+            raise NotMappingFieldException(
+                'No mapping found for field {field}'.format(field=field_name)
+            )
 
         return (mapping, (lambda x: x), (lambda x: x)) if not isinstance(mapping, tuple) else mapping
 
