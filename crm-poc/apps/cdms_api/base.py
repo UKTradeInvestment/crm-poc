@@ -135,6 +135,7 @@ class CDMSApi(object):
             skip=skip,
             params='&'.join([u'%s=%s' % (k, v) for k, v in params.items()])
         )
+
         results = self._make_request('get', url)
         return results['results']
 

@@ -23,26 +23,27 @@ class CDMSQuerySet(models.QuerySet):
         clone.cdms_skip = self.cdms_skip
         return clone
 
+    def none(self):
+        self.cdms_query.set_empty()
+        return super(CDMSQuerySet, self).none()
+
     def get(self, *args, **kwargs):
-        obj = super(CDMSQuerySet, self).get(*args, **kwargs)
+        original_cdms_skip = self.cdms_skip
+        self.cdms_skip = True
+        try:
+            obj = super(CDMSQuerySet, self).get(*args, **kwargs)
 
-        if not self.cdms_skip:
-            # save original value
-            original_cdms_skip = self.cdms_skip
-            self.cdms_skip = True
-
-            # get cdms object
-            query = RefreshQuery(self.model)
-            query.set_obj(obj)
-            obj = query.get_compiler().execute()
-
+            if not original_cdms_skip:
+                # get cdms object
+                query = RefreshQuery(self.model)
+                query.set_local_obj(obj)
+                obj = query.get_compiler().execute()
+        finally:
             # restore old setting
             self.cdms_skip = original_cdms_skip
         return obj
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
-        # cdms_skip = self.cdms_skip or (len(kwargs.keys()) == 1 and list(kwargs)[0] in ('id', 'pk'))
-
         if not self.cdms_skip:
             if args or kwargs:
                 assert self.query.can_filter(), \
@@ -87,7 +88,6 @@ class CDMSQuerySet(models.QuerySet):
             cdms_pk = query.get_compiler().execute()
 
             # update cdms_pk local
-            # TODO make sure the cdms update doesn't happen
             obj.cdms_pk = cdms_pk
             self.filter(pk=return_val).update(cdms_pk=cdms_pk)
 
@@ -117,15 +117,6 @@ class CDMSQuerySet(models.QuerySet):
             query.get_compiler().execute()
 
         return return_val
-
-    # def test(self):
-    #     results = cdms_conn.list('detica_omisorder', top=1, filters=[
-    #         "CreatedOn ge datetime'2015-01-01T00:00:00'",
-    #         "(statuscode/Value eq 790740030 or statuscode/Value eq 790740013)",
-    #         "detica_servicetype/Value eq 790740000"
-    #     ])
-    #     aa = results['results'][0]
-    #     import pdb; pdb.set_trace()
 
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):

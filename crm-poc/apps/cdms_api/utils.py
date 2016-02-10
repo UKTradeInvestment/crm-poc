@@ -12,6 +12,9 @@ def mocked_cdms_get(modified_on=None, data={}):
         defaults = {
             'ModifiedOn': '/Date({dt})/'.format(
                 dt=int(time.mktime(modified.timetuple()) * 1000)
+            ),
+            'CreatedOn': '/Date({dt})/'.format(
+                dt=int(time.mktime(modified.timetuple()) * 1000)
             )
         }
         defaults.update(data)

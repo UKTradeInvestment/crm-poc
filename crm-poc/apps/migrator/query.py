@@ -1,10 +1,12 @@
 import datetime
+import sys
 from numbers import Number
 
-from django.db import models
+from django.db import transaction, models
 from django.db.models.sql.query import get_field_names_from_opts
 from django.db.models.constants import LOOKUP_SEP
 from django.utils.tree import Node
+from django.utils import timezone
 from django.core.exceptions import FieldDoesNotExist, FieldError
 
 from cdms_api import api as cdms_conn
@@ -28,6 +30,8 @@ class CDMSSelectCompiler(CDMSCompiler):
         'lte': '{field} le {value}',
         'gt': '{field} gt {value}',
         'gte': '{field} ge {value}',
+        'contains': 'substringof({value}, {field})',
+        'icontains': 'substringof({value}, {field})',
     }
 
     def convert_value(self, value):
@@ -43,6 +47,9 @@ class CDMSSelectCompiler(CDMSCompiler):
         return "'{value}'".format(value=value)
 
     def execute(self):
+        if self.query.empty:
+            return []
+
         cdms_filters = []
         for field, expr, value in self.query.filters:
             cdms_expr = self.EXPRS.get(expr)
@@ -52,6 +59,7 @@ class CDMSSelectCompiler(CDMSCompiler):
             cdms_filters.append(
                 cdms_expr.format(field=field, value=self.convert_value(value))
             )
+
         return cdms_conn.list(self.get_service(), filters=cdms_filters)
 
 
@@ -60,7 +68,7 @@ class CDMSInsertCompiler(CDMSCompiler):
         results = cdms_conn.create(
             self.get_service(), data=self.query.cdms_data
         )
-        return results['{service}Id'.format(service=self.get_service())]
+        return self.query.model.cdms_migrator.get_cdms_pk(results)
 
 
 class CDMSGetCompiler(CDMSCompiler):
@@ -81,32 +89,67 @@ class CDMSUpdateCompiler(CDMSCompiler):
 
 
 class CDMSRefreshCompiler(CDMSGetCompiler):
-    def execute(self):
+    def get_cdms_data(self):
+        if self.query.cdms_data:
+            return self.query.cdms_data
         # get cdms_obj
-        cdms_data = super(CDMSRefreshCompiler, self).execute()
+        return super(CDMSRefreshCompiler, self).execute()
 
+    def get_local_obj(self):
+        if self.query.local_obj:
+            return (self.query.local_obj, False)
+
+        results = self.query.model.objects.mark_as_cdms_skip().filter(cdms_pk=self.query.cdms_pk)
+        if results:
+            return (results[0], False)
+
+        obj = self.query.model()
+        obj.modified = timezone.now() - datetime.timedelta(days=(50 * 365))
+        obj.created = obj.modified
+        return (obj, True)
+
+    def execute(self):
         migrator = self.query.model.cdms_migrator
-        obj = self.query.local_obj
+        manager = self.query.model.objects
+        cdms_data = self.get_cdms_data()
+        obj, new_obj = self.get_local_obj()
 
         # check if local obj has to be updated
-        changed, modified_on = migrator.has_cdms_obj_changed(obj, cdms_data)
+        changed, modified_on, created_on = migrator.has_cdms_obj_changed(obj, cdms_data)
         if changed:
             # 1st save for the fields
             migrator.update_local_from_cdms_data(obj, cdms_data)
             obj.save(cdms_skip=True)
 
-            # 2nd save for the modified field (this can be improved)
+            # 2nd save for the modified/created field (this can be improved)
+            update_fields = {}
             obj.modified = modified_on
-            obj.__class__.objects.filter(pk=obj.pk).update(modified=modified_on)
+            update_fields['modified'] = modified_on
+
+            if new_obj:
+                obj.created = created_on
+                obj.cdms_pk = self.query.cdms_pk
+                update_fields['created'] = obj.created
+                update_fields['cdms_pk'] = obj.cdms_pk
+            manager.filter(pk=obj.pk).update(**update_fields)
 
         return obj
 
 
 class CDMSModelIterable(models.query.ModelIterable):
     def __iter__(self):
-        if not self.queryset.cdms_skip:
-            cdms_query = self.queryset.cdms_query
-            # results = CDMSSelectCompiler(cdms_query).execute()
+        # NOTE: do keep the sys.exc_info check otherwise django
+        # will keep calling this method over and over again when
+        # trying to print the 500 error page which is NOT what we want
+        if not self.queryset.cdms_skip and not sys.exc_info()[0]:
+            with transaction.atomic():
+                cdms_query = self.queryset.cdms_query
+                results = CDMSSelectCompiler(cdms_query).execute()
+
+                for result in results:
+                    query = RefreshQuery(self.queryset.model)
+                    query.set_cdms_data(result)
+                    query.get_compiler().execute()
 
         return super(CDMSModelIterable, self).__iter__()
 
@@ -118,6 +161,10 @@ class CDMSQuery(object):
         self.model = model
 
         self.filters = []
+        self.empty = False
+
+    def set_empty(self):
+        self.empty = True
 
     def add_q(self, q_object):
         self._add_q(q_object)
@@ -381,7 +428,16 @@ class RefreshQuery(GetQuery):
     def __init__(self, *args, **kwargs):
         super(GetQuery, self).__init__(*args, **kwargs)
         self.local_obj = None
+        self.cdms_data = None
 
-    def set_obj(self, obj):
+    def set_local_obj(self, obj):
+        assert not self.cdms_data, \
+            "you can either call set_local_obj or set_cdms_data but not both"
         self.set_cdms_pk(obj.cdms_pk)
         self.local_obj = obj
+
+    def set_cdms_data(self, cdms_data):
+        assert not self.local_obj, \
+            "you can either call set_local_obj or set_cdms_data but not both"
+        self.cdms_pk = self.model.cdms_migrator.get_cdms_pk(cdms_data)
+        self.cdms_data = cdms_data
