@@ -34,7 +34,8 @@ class Organisation(CRMBaseModel):
     city = models.CharField(max_length=255, blank=True)
     uk_region = models.CharField(
         max_length=255,
-        choices=UK_REGION_CHOICES
+        choices=UK_REGION_CHOICES,
+        blank=True
     )
 
     country_code = models.CharField(max_length=255)

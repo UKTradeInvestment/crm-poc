@@ -63,9 +63,9 @@ class BaseCDMSMigrator(object):
             except NotMappingFieldException:
                 continue
 
-            value = mapping_func(self.parse_cdms_value(field, cdms_data[cdms_field]))
+            value = mapping_func(cdms_data[cdms_field])
 
-            setattr(local_obj, field_name, value)
+            setattr(local_obj, field_name, self.parse_cdms_value(field, value))
 
         return local_obj
 
