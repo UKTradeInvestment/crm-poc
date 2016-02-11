@@ -137,33 +137,3 @@ class UpdateTestCase(BaseOrgSyncTestCase):
         self.assertEqual(Organisation.objects.count(), 1)
         self.assertRaises(Exception, obj.save)
         self.assertEqual(Organisation.objects.count(), 1)
-
-
-"""
-class DeleteTestCase(BaseOrgSyncTestCase):
-
-    def test_delete_success(self):
-        obj = mommy.make(Organisation)
-
-        self.assertEqual(Organisation.objects.count(), 1)
-        obj.delete()
-        self.assertEqual(Organisation.objects.count(), 0)
-
-        # assert cdms call
-        self.assertEqual(self.mocked_api.delete.call_count, 1)
-
-        service = self.mocked_api.delete.call_args[0][0]
-        guid = self.mocked_api.delete.call_args[1]['guid']
-
-        self.assertEqual(service, 'Account')
-        self.assertEqual(guid, obj.cdms_pk)
-
-    def test_delete_failure(self):
-        self.mocked_api.delete.side_effect = Exception
-
-        obj = mommy.make(Organisation)
-
-        self.assertEqual(Organisation.objects.count(), 1)
-        self.assertRaises(Exception, obj.delete)
-        self.assertEqual(Organisation.objects.count(), 1)
-"""

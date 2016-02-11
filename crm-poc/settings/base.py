@@ -32,7 +32,6 @@ INSTALLED_APPS = (
 
 PROJECT_APPS = (
     'organisation',
-    'demo',
 )
 
 INSTALLED_APPS += PROJECT_APPS
@@ -116,6 +115,12 @@ TEMPLATES = [
     }
 ]
 
+# CDMS SETTINGS
+CDMS_ADFS_URL = ''
+CDMS_BASE_URL = ''
+CDMS_USERNAME = ''
+CDMS_PASSWORD = ''
+
 
 # .local.py overrides all the common settings.
 try:
@@ -125,5 +130,5 @@ except ImportError:
 
 
 # importing test settings file if necessary
-if len(sys.argv) > 1 and 'test' in sys.argv[1]:
+if IN_TESTING:
     from .testing import *

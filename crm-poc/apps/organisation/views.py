@@ -1,6 +1,5 @@
 from django.views.generic import ListView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from django.core.urlresolvers import reverse_lazy
+from django.views.generic.edit import CreateView, UpdateView
 
 from .models import Organisation
 
@@ -48,7 +47,3 @@ class Update(OrganisationMixin, UpdateView):
         'country_code', 'area_code', 'phone_number',
         'email_address', 'sector'
     ]
-
-
-class Delete(OrganisationMixin, DeleteView):
-    success_url = reverse_lazy('organisation:list')

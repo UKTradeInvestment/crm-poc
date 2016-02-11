@@ -4,7 +4,6 @@ from django.conf.urls.static import static
 from django.contrib import admin
 
 urlpatterns = [
-    url(r'^demo/', include('demo.urls')),
     url(r'^organisation/', include('organisation.urls', namespace='organisation')),
 
     url(r'^admin/', include(admin.site.urls)),

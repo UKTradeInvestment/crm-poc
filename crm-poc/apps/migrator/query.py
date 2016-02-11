@@ -178,8 +178,6 @@ class CDMSQuery(object):
         connector = q_object.connector
         current_negated = current_negated ^ q_object.negated
         branch_negated = branch_negated or q_object.negated
-        # target_clause = self.where_class(connector=connector,
-        #                                  negated=q_object.negated)
         for child in q_object.children:
             if isinstance(child, Node):
                 child_clause, needed_inner = self._add_q(
@@ -195,8 +193,6 @@ class CDMSQuery(object):
                 self.filters.append(
                     (field_name, lookup, value)
                 )
-            # if child_clause:
-            #     target_clause.add(child_clause, connector)
 
     def solve_lookup_type(self, lookup):
         """
@@ -217,9 +213,7 @@ class CDMSQuery(object):
 
     def names_to_path(self, names, opts, fail_on_missing=False):
         path = []
-        # names_with_path = []
         for pos, name in enumerate(names):
-            # cur_names_with_path = (name, [])
             if name == 'pk':
                 name = opts.pk.name
 
@@ -234,18 +228,6 @@ class CDMSQuery(object):
                     raise NotImplementedError(
                         'Only direct access to fields implemented at the moment'
                     )
-                """
-                # Fields that contain one-to-many relations with a generic
-                # model (like a GenericForeignKey) cannot generate reverse
-                # relations and therefore cannot be used for reverse querying.
-                if field.is_relation and not field.related_model:
-                    raise FieldError(
-                        "Field %r does not generate an automatic reverse "
-                        "relation and therefore cannot be used for reverse "
-                        "querying. If it is a GenericForeignKey, consider "
-                        "adding a GenericRelation." % name
-                    )
-                """
                 try:
                     model = field.model._meta.concrete_model
                 except AttributeError:
@@ -268,44 +250,11 @@ class CDMSQuery(object):
                 raise NotImplementedError(
                     'Only direct access to fields implemented at the moment'
                 )
-                """
-                # The field lives on a base class of the current model.
-                # Skip the chain of proxy to the concrete proxied model
-                proxied_model = opts.concrete_model
-
-                for int_model in opts.get_base_chain(model):
-                    if int_model is proxied_model:
-                        opts = int_model._meta
-                    else:
-                        final_field = opts.parents[int_model]
-                        targets = (final_field.remote_field.get_related_field(),)
-                        opts = int_model._meta
-                        path.append(PathInfo(final_field.model._meta, opts, targets, final_field, False, True))
-                        cur_names_with_path[1].append(
-                            PathInfo(final_field.model._meta, opts, targets, final_field, False, True)
-                        )
-                """
 
             if hasattr(field, 'get_path_info'):
                 raise NotImplementedError(
                     'Only direct access to fields implemented at the moment'
                 )
-                """
-                pathinfos = field.get_path_info()
-                if not allow_many:
-                    for inner_pos, p in enumerate(pathinfos):
-                        if p.m2m:
-                            cur_names_with_path[1].extend(pathinfos[0:inner_pos + 1])
-                            names_with_path.append(cur_names_with_path)
-                            raise MultiJoin(pos + 1, names_with_path)
-                last = pathinfos[-1]
-                path.extend(pathinfos)
-                final_field = last.join_field
-                opts = last.to_opts
-                targets = last.target_fields
-                cur_names_with_path[1].extend(pathinfos)
-                names_with_path.append(cur_names_with_path)
-                """
             else:
                 # Local non-relational field.
                 final_field = field
@@ -346,34 +295,16 @@ class CDMSQuery(object):
         # uses of None as a query value.
         if value is None:
             raise NotImplementedError('Cannot use None as value, not implemented yet')
-            """
-            if lookups[-1] not in ('exact', 'iexact'):
-                raise ValueError("Cannot use None as a query value")
-            lookups[-1] = 'isnull'
-            value = True
-            """
         elif hasattr(value, 'resolve_expression'):
             raise NotImplementedError('Can only use raw values, anything else has not been implemented yet')
-            """
-            pre_joins = self.alias_refcount.copy()
-            value = value.resolve_expression(self, reuse=can_reuse, allow_joins=allow_joins)
-            used_joins = [k for k, v in self.alias_refcount.items() if v > pre_joins.get(k, 0)]
-            """
+
         # Subqueries need to use a different set of aliases than the
         # outer query. Call bump_prefix to change aliases of the inner
         # query (the value).
         if hasattr(value, 'query') and hasattr(value.query, 'bump_prefix'):
             raise NotImplementedError('Can only use raw values, anything else has not been implemented yet')
-            """
-            value = value._clone()
-            value.query.bump_prefix(self)
-            """
         if hasattr(value, 'bump_prefix'):
             raise NotImplementedError('Can only use raw values, anything else has not been implemented yet')
-            """
-            value = value.clone()
-            value.bump_prefix(self)
-            """
 
         return value, lookups
 
