@@ -1,6 +1,5 @@
 from django.views.generic import ListView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
-from django.core.urlresolvers import reverse_lazy
+from django.views.generic.edit import CreateView, UpdateView
 
 from .models import Organisation
 
@@ -12,6 +11,22 @@ class OrganisationMixin(object):
 
 class Index(OrganisationMixin, ListView):
     context_object_name = 'organisations'
+
+    def get_q(self):
+        return self.request.GET.get('q')
+
+    def get_queryset(self):
+        q = self.get_q()
+
+        if not q:
+            return self.model.objects.none()
+
+        return self.model.objects.filter(name__icontains=q)
+
+    def get_context_data(self, **kwargs):
+        context_data = super(Index, self).get_context_data(**kwargs)
+        context_data['q'] = self.get_q()
+        return context_data
 
 
 class Create(OrganisationMixin, CreateView):
@@ -32,7 +47,3 @@ class Update(OrganisationMixin, UpdateView):
         'country_code', 'area_code', 'phone_number',
         'email_address', 'sector'
     ]
-
-
-class Delete(OrganisationMixin, DeleteView):
-    success_url = reverse_lazy('organisation:list')

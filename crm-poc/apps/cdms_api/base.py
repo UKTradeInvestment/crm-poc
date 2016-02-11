@@ -2,6 +2,7 @@ import json
 import requests
 import pickle
 import os.path
+import logging
 
 from django.conf import settings
 from django.utils.text import slugify
@@ -15,6 +16,8 @@ CRM_BASE_URL = settings.CDMS_BASE_URL
 COOKIE_FILE = '/tmp/cdms_cookie_{slug}.tmp'.format(
     slug=slugify(CRM_BASE_URL)
 )
+
+logger = logging.getLogger('cmds_api')
 
 
 class CDMSApi(object):
@@ -98,7 +101,7 @@ class CDMSApi(object):
         return session
 
     def _make_request(self, verb, url, data={}):
-        print('calling (%s) on %s' % (verb, url))
+        logger.debug('Calling CDMS url (%s) on %s' % (verb, url))
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
 
         if data:
@@ -106,6 +109,7 @@ class CDMSApi(object):
         resp = getattr(self.session, verb)(url, data=data, headers=headers, verify=False)
 
         if resp.status_code >= 400:
+            logger.debug('Got CDMS error (%s): %s' % (resp.status_code, resp.content))
             raise CDMSException(
                 message=resp.content,
                 status_code=resp.status_code
@@ -132,9 +136,11 @@ class CDMSApi(object):
             service=service,
             top=top,
             skip=skip,
-            params='&'.join([u'%s=%s' % (k, v) for k, v in params])
+            params='&'.join([u'%s=%s' % (k, v) for k, v in params.items()])
         )
-        return self._make_request('get', url)
+
+        results = self._make_request('get', url)
+        return results['results']
 
     def get(self, service, guid):
         url = "{base_url}/{service}Set(guid'{guid}')".format(
