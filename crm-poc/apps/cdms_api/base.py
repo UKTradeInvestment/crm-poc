@@ -1,7 +1,7 @@
 import json
 import requests
 import pickle
-import os.path
+import os
 import logging
 
 from django.conf import settings
@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from pyquery import PyQuery
 
-from .exceptions import CDMSException
+from .exceptions import CDMSException, CDMSUnauthorizedException
 
 CRM_BASE_URL = settings.CDMS_BASE_URL
 
@@ -28,14 +28,16 @@ class CDMSApi(object):
     def __init__(self, username, password):
         self.username = username
         self.password = password
+        self.setup_session()
 
-        self.session = self._get_or_create_session()
-
-    def _get_or_create_session(self):
+    def setup_session(self, force=False):
         """
         So that we don't login every time during dev, we save the cookie
         in a file and load it afterwards.
         """
+        if force and os.path.exists(COOKIE_FILE):
+            os.remove(COOKIE_FILE)
+
         if not os.path.exists(COOKIE_FILE):
             session = self.login()
             with open(COOKIE_FILE, 'wb') as f:
@@ -47,7 +49,8 @@ class CDMSApi(object):
             jar = requests.cookies.RequestsCookieJar()
             jar._cookies = cookies
             session.cookies = jar
-        return session
+
+        self.session = session
 
     def login(self):
         session = requests.session()
@@ -100,6 +103,18 @@ class CDMSApi(object):
         )
         return session
 
+    def make_request(self, verb, url, data={}):
+        """
+        Makes the call to CDMS, if 401 is found, it reauthenticates
+        and tries again making the same call
+        """
+        try:
+            return self._make_request(verb, url, data=data)
+        except CDMSUnauthorizedException:
+            logger.debug('Session expired, reauthenticating and trying again')
+            self.setup_session(force=True)
+        return self._make_request(verb, url, data=data)
+
     def _make_request(self, verb, url, data={}):
         logger.debug('Calling CDMS url (%s) on %s' % (verb, url))
         headers = {'Content-type': 'application/json', 'Accept': 'application/json'}
@@ -110,8 +125,10 @@ class CDMSApi(object):
 
         if resp.status_code >= 400:
             logger.debug('Got CDMS error (%s): %s' % (resp.status_code, resp.content))
-            raise CDMSException(
-                message=resp.content,
+
+            ExceptionClass = CDMSUnauthorizedException if resp.status_code == 401 else CDMSException
+            raise ExceptionClass(
+                resp.content,
                 status_code=resp.status_code
             )
 
@@ -139,7 +156,7 @@ class CDMSApi(object):
             params='&'.join([u'%s=%s' % (k, v) for k, v in params.items()])
         )
 
-        results = self._make_request('get', url)
+        results = self.make_request('get', url)
         return results['results']
 
     def get(self, service, guid):
@@ -148,7 +165,7 @@ class CDMSApi(object):
             service=service,
             guid=guid
         )
-        return self._make_request('get', url)
+        return self.make_request('get', url)
 
     def _cleanup_data_before_changes(self, cdms_data):
         del cdms_data['optevia_LastVerified']
@@ -164,14 +181,14 @@ class CDMSApi(object):
             guid=guid
         )
         data = self._cleanup_data_before_changes(data)
-        return self._make_request('put', url, data=data)
+        return self.make_request('put', url, data=data)
 
     def create(self, service, data):
         url = "{base_url}/{service}Set".format(
             base_url=self.CRM_REST_BASE_URL,
             service=service
         )
-        return self._make_request('post', url, data=data)
+        return self.make_request('post', url, data=data)
 
     def delete(self, service, guid):
         url = "{base_url}/{service}Set(guid'{guid}')".format(
@@ -179,4 +196,4 @@ class CDMSApi(object):
             service=service,
             guid=guid
         )
-        return self._make_request('delete', url)
+        return self.make_request('delete', url)
