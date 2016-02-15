@@ -55,7 +55,7 @@ class BaseCDMSMigrator(object):
             return ''
         return cdms_value
 
-    def update_local_from_cdms_data(self, local_obj, cdms_data):
+    def update_local_from_cdms_data(self, local_obj, cdms_data, cdms_known_related_objects={}):
         for field in local_obj._meta.fields:
             field_name = field.name
             try:
@@ -63,9 +63,15 @@ class BaseCDMSMigrator(object):
             except NotMappingFieldException:
                 continue
 
-            value = mapping_func(cdms_data[cdms_field])
+            raw_value = mapping_func(cdms_data[cdms_field])
+            value = self.parse_cdms_value(field, raw_value)
+            if field_name in cdms_known_related_objects:
+                related_obj = cdms_known_related_objects.get(field_name, {}).get(value.cdms_pk)
 
-            setattr(local_obj, field_name, self.parse_cdms_value(field, value))
+                if related_obj:
+                    value = related_obj
+
+            setattr(local_obj, field_name, value)
 
         return local_obj
 

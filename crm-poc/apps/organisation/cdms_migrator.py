@@ -1,3 +1,5 @@
+from django.apps import apps
+
 from migrator.cdms_migrator import BaseCDMSMigrator
 
 
@@ -30,3 +32,16 @@ class OrganisationMigrator(BaseCDMSMigrator):
         if cdms_data:
             cdms_data['optevia_PAFOverride'] = True
         return cdms_data
+
+
+class ContactMigrator(BaseCDMSMigrator):
+    fields = {
+        'first_name': 'FirstName',
+        'last_name': 'LastName',
+        'organisation': (
+            'ParentCustomerId',
+            lambda x: {'Id': x.cdms_pk},
+            lambda x: apps.get_model('organisation.Organisation')(cdms_pk=x['Id'])
+        ),
+    }
+    service = 'Contact'

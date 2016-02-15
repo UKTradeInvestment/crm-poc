@@ -3,8 +3,9 @@ from django.core.urlresolvers import reverse
 
 from core.models import CRMBaseModel
 from core.managers import CRMManager
+from core.fields import UKTIForeignKey
 
-from .cdms_migrator import OrganisationMigrator
+from .cdms_migrator import OrganisationMigrator, ContactMigrator
 
 
 COUNTRY_CHOICES = (
@@ -57,3 +58,18 @@ class Organisation(CRMBaseModel):
 
     def get_absolute_url(self):
         return reverse('organisation:update', args=[str(self.id)])
+
+
+class Contact(CRMBaseModel):
+    organisation = UKTIForeignKey(Organisation)
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+
+    objects = CRMManager()
+    cdms_migrator = ContactMigrator()
+
+    def __str(self):
+        return '{first} {second}'.format(
+            first=self.first_name,
+            last=self.last_name
+        )

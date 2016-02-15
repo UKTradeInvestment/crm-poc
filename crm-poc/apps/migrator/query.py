@@ -11,6 +11,8 @@ from django.core.exceptions import FieldDoesNotExist, FieldError
 
 from cdms_api import api as cdms_conn
 
+from .models import CDMSModel
+
 
 class CDMSCompiler(object):
     def __init__(self, query):
@@ -44,6 +46,8 @@ class CDMSSelectCompiler(CDMSCompiler):
             raise NotImplementedError('TODO: format date, should be easy')
         if isinstance(value, datetime.time):
             raise NotImplementedError('TODO: format time, should be easy')
+        if isinstance(value, CDMSModel):
+            return "guid'{value}'".format(value=value.cdms_pk)
         return "'{value}'".format(value=value)
 
     def execute(self):
@@ -118,7 +122,10 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
         changed, modified_on, created_on = migrator.has_cdms_obj_changed(obj, cdms_data)
         if changed:
             # 1st save for the fields
-            migrator.update_local_from_cdms_data(obj, cdms_data)
+            migrator.update_local_from_cdms_data(
+                obj, cdms_data,
+                cdms_known_related_objects=self.query.cdms_known_related_objects
+            )
             obj.save(cdms_skip=True)
 
             # 2nd save for the modified/created field (this can be improved)
@@ -138,6 +145,7 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
 
 class CDMSModelIterable(models.query.ModelIterable):
     def __iter__(self):
+
         # NOTE: do keep the sys.exc_info check otherwise django
         # will keep calling this method over and over again when
         # trying to print the 500 error page which is NOT what we want
@@ -148,6 +156,7 @@ class CDMSModelIterable(models.query.ModelIterable):
 
                 for result in results:
                     query = RefreshQuery(self.queryset.model)
+                    query.set_cdms_known_related_objects(self.queryset._cdms_known_related_objects)
                     query.set_cdms_data(result)
                     query.get_compiler().execute()
 
@@ -162,6 +171,10 @@ class CDMSQuery(object):
 
         self.filters = []
         self.empty = False
+        self.cdms_known_related_objects = {}
+
+    def set_cdms_known_related_objects(self, cdms_known_related_objects):
+        self.cdms_known_related_objects = cdms_known_related_objects
 
     def set_empty(self):
         self.empty = True
@@ -224,10 +237,21 @@ class CDMSQuery(object):
                 pass
 
             if field is not None:
-                if field.is_relation:
+                if field.is_relation and not field.related_model:
                     raise NotImplementedError(
-                        'Only direct access to fields implemented at the moment'
+                        'Generic relationships not implemented yet'
                     )
+
+                if field.is_relation and not isinstance(field.related_model(), CDMSModel):
+                    raise NotImplementedError(
+                        'Relations not of type CDMSModel not yet implemented'
+                    )
+
+                if field.is_relation and len(names) > 1:
+                    raise NotImplementedError(
+                        'Only filtering by foreign key allowed at the moment'
+                    )
+
                 try:
                     model = field.model._meta.concrete_model
                 except AttributeError:
@@ -248,13 +272,16 @@ class CDMSQuery(object):
             # children)
             if model is not opts.model:
                 raise NotImplementedError(
-                    'Only direct access to fields implemented at the moment'
+                    'Proxy objects not yet implemented'
                 )
 
             if hasattr(field, 'get_path_info'):
-                raise NotImplementedError(
-                    'Only direct access to fields implemented at the moment'
-                )
+                pathinfos = field.get_path_info()
+                last = pathinfos[-1]
+                final_field = last.join_field
+                targets = (field,)
+
+                break
             else:
                 # Local non-relational field.
                 final_field = field
@@ -284,6 +311,9 @@ class CDMSQuery(object):
 
         field_name = field.name
         cdms_field_name, _, _ = self.model.cdms_migrator.get_fields_mapping(field_name)
+
+        if field.is_relation:
+            cdms_field_name = '{field}/Id'.format(field=cdms_field_name)
 
         return cdms_field_name, lookups[0], value
 

@@ -11,6 +11,7 @@ class CDMSQuerySet(models.QuerySet):
         self.cdms_skip = False
 
         self.cdms_query = CDMSQuery(model)
+        self._cdms_known_related_objects = {}  # {rel_field_name, {cdms_pk: rel_obj}}
         self._iterable_class = CDMSModelIterable
 
     def mark_as_cdms_skip(self):
@@ -21,6 +22,7 @@ class CDMSQuerySet(models.QuerySet):
         clone = super(CDMSQuerySet, self)._clone(**kwargs)
         clone.cdms_query = self.cdms_query  # we might need to clone this
         clone.cdms_skip = self.cdms_skip
+        clone._cdms_known_related_objects = self._cdms_known_related_objects
         return clone
 
     def none(self):
