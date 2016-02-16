@@ -6,9 +6,9 @@ from django.utils import timezone
 
 from cdms_api.utils import mocked_cdms_create, mocked_cdms_get
 
-from ..models import Organisation
+from organisation.models import Organisation
 
-from .base import get_sample_organisation, get_sample_cdms_organisation
+from organisation.tests.base import get_sample_organisation, get_sample_cdms_organisation
 
 
 class BaseOrgSyncTestCase(TransactionTestCase):

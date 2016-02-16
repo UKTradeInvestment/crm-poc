@@ -3,7 +3,7 @@ from django.test.testcases import TestCase
 
 from cdms_api.utils import mocked_cdms_get
 
-from ..models import Organisation
+from organisation.models import Organisation
 
 
 class BaseFilterBuilderTestCase(TestCase):
