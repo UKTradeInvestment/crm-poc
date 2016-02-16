@@ -22,6 +22,7 @@ class CDMSQuerySet(models.QuerySet):
         clone = super(CDMSQuerySet, self)._clone(**kwargs)
         clone.cdms_query = self.cdms_query  # we might need to clone this
         clone.cdms_skip = self.cdms_skip
+
         clone._cdms_known_related_objects = self._cdms_known_related_objects
         return clone
 
@@ -43,6 +44,16 @@ class CDMSQuerySet(models.QuerySet):
         finally:
             # restore old setting
             self.cdms_skip = original_cdms_skip
+        return obj
+
+    def create(self, **kwargs):
+        """
+        Creates a new object with the given kwargs, saving it to the database
+        and returning the created object.
+        """
+        obj = self.model(**kwargs)
+        self._for_write = True
+        obj.save(force_insert=True, using=self.db, cdms_skip=self.cdms_skip)
         return obj
 
     def _filter_or_exclude(self, negate, *args, **kwargs):

@@ -14,7 +14,7 @@ from organisation.tests.base import get_sample_organisation, get_sample_cdms_org
 class BaseOrgSyncTestCase(TransactionTestCase):
     @mock.patch('migrator.query.cdms_conn')
     def __call__(self, result, mocked_cdms_conn, *args, **kwargs):
-        mocked_cdms_conn.create.side_effect = mocked_cdms_create
+        mocked_cdms_conn.create.side_effect = mocked_cdms_create()
         mocked_cdms_conn.get.side_effect = mocked_cdms_get()
         self.mocked_cdms_conn = mocked_cdms_conn
         super(BaseOrgSyncTestCase, self).__call__(result, *args, **kwargs)
@@ -84,7 +84,7 @@ class GetTestCase(BaseOrgSyncTestCase):
             - update db
         """
         self.mocked_cdms_conn.get.side_effect = mocked_cdms_get(
-            data=get_sample_cdms_organisation({
+            get_data=get_sample_cdms_organisation({
                 'optevia_Alias': 'value 2'
             })
         )
