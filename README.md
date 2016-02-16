@@ -142,6 +142,7 @@ This means that you can use the usual Django ORM API:
 myModel.save()
 MyModel.objects.create()
 MyModel.objects.filter(field1__icontains='...', field2__lt=4)
+myModel.related_obj.set.all()
 ...
 ```
 
@@ -153,7 +154,7 @@ There are some limitations in using this approach:
 
 1. Amount of requests. This has not been measured yet but could (and should) be partially addressed by using some sort of caching strategy
 2. The synchronization happens using one common CDMS user
-3. Some Django ORM API cannot be easily implemented. E.g. ```Model.objects.count()```, ```Model.objects.filter(field1__field2='sdfsd')```. This is mainly because of the old CDMS technologies
+3. Some Django ORM API cannot be easily implemented. E.g. ```Model.objects.count()```, ```Model.objects.filter(field1__field2='something')```. This is mainly because of the old CDMS technologies
 
 ## Tips
 
