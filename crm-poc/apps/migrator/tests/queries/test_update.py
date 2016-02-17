@@ -1,5 +1,6 @@
 from unittest import skip
 
+from django.db import transaction
 from django.utils import timezone
 
 from migrator.tests.queries.models import SimpleObj
@@ -259,3 +260,33 @@ class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         self.assertEqual(obj1.name, 'simple obj')
         obj2 = SimpleObj.objects.mark_as_cdms_skip().get(pk=obj2.pk)
         self.assertEqual(obj2.name, 'simple obj')
+
+
+class SelectForUpdateCDMSTestCase(BaseMockedCDMSApiTestCase):
+    def test_not_implemented_without_skipping_cdms(self):
+        """
+        MyObject.objects.select_for_update() not supported yet.
+        """
+        self.assertRaises(
+            NotImplementedError,
+            SimpleObj.objects.select_for_update
+        )
+
+    def test_as_usual_with_cdms_skip(self):
+        """
+        MyObject.objects.mark_as_cdms_skip().select_for_update() working as usual.
+        """
+        SimpleObj.objects.mark_as_cdms_skip().create(cdms_pk='cdms-pk', name='old name')
+
+        with transaction.atomic():
+            entries = SimpleObj.objects.mark_as_cdms_skip().select_for_update().filter(name__icontains='name')
+            self.assertEqual(len(entries), 1)
+
+            self.assertNoAPINotCalled()
+
+    @skip('TODO to be decided')
+    def test_as_usual_with_extra_manager(self):
+        """
+        The output when using an extra manager at the moment is unexpected and should not be used.
+        """
+        pass

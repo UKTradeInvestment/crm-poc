@@ -30,6 +30,14 @@ class CDMSQuerySet(models.QuerySet):
         self.cdms_query.set_empty()
         return super(CDMSQuerySet, self).none()
 
+    def select_for_update(self, *args, **kwargs):
+        """
+        Only supported when explicitly skipping cdms.
+        """
+        if not self.cdms_skip:
+            raise NotImplementedError('select_for_update not implemented yet')
+        return super(CDMSQuerySet, self).select_for_update(*args, **kwargs)
+
     def get(self, *args, **kwargs):
         original_cdms_skip = self.cdms_skip
         self.cdms_skip = True
