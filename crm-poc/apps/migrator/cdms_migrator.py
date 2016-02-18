@@ -1,6 +1,7 @@
 from django.db import models
+from django.conf import settings
 
-from .exceptions import NotMappingFieldException
+from .exceptions import NotMappingFieldException, ObjectsNotInSyncException
 from .utils import parse_cdms_date
 
 
@@ -17,10 +18,12 @@ class BaseCDMSMigrator(object):
 
         change_delta = (cdms_modified_on - local_obj.modified).total_seconds()
 
-        if change_delta < -2:
-            raise Exception('Django Model changed without being syncronised to CDMS, this should not happen')
+        if change_delta < (settings.CDMS_SYNC_DELTA * -1):
+            raise ObjectsNotInSyncException(
+                'Django Model changed without being syncronised to CDMS, this should not happen'
+            )
 
-        changed = change_delta > 2
+        changed = change_delta > settings.CDMS_SYNC_DELTA
         return changed, cdms_modified_on, cdms_created_on
 
     def get_fields_mapping(self, field_name):
