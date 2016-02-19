@@ -21,7 +21,7 @@ class Index(OrganisationMixin, ListView):
         if not q:
             return self.model.objects.none()
 
-        return self.model.objects.filter(name__icontains=q)
+        return self.model.objects.filter(name__contains=q)
 
     def get_context_data(self, **kwargs):
         context_data = super(Index, self).get_context_data(**kwargs)

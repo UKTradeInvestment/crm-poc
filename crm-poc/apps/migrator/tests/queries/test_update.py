@@ -36,7 +36,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
 
         # check cdms update called
         expected_data = mocked_cdms_get(modified_on=modified_on)(None, None)
-        expected_data.update({'Name': 'simple obj'})
+        expected_data.update({'Name': 'simple obj', 'DateField': None, 'IntField': None})
         self.assertAPIUpdateCalled(
             SimpleObj,
             kwargs={

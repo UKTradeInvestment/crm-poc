@@ -127,7 +127,9 @@ class GetTestCase(BaseGetTestCase):
         modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
             modified_on=modified_on, get_data={
-                'Name': 'new name'
+                'Name': 'new name',
+                'DateField': None,
+                'IntField': None
             }
         )
 

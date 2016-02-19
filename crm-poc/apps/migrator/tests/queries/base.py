@@ -48,3 +48,6 @@ class BaseMockedCDMSApiTestCase(TransactionTestCase):
 
     def assertAPIGetCalled(self, model, kwargs, tot=1):
         self.assertAPICalled(model, 'get', kwargs=kwargs, tot=tot)
+
+    def assertAPIListCalled(self, model, kwargs, tot=1):
+        self.assertAPICalled(model, 'list', kwargs=kwargs, tot=tot)

@@ -19,7 +19,7 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
-            SimpleObj, kwargs={'data': {'Name': 'simple obj'}}
+            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateField': None, 'IntField': None}}
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
@@ -50,7 +50,7 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
-            SimpleObj, kwargs={'data': {'Name': 'simple obj'}}
+            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateField': None, 'IntField': None}}
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 

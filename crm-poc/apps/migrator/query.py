@@ -28,20 +28,30 @@ class CDMSCompiler(object):
 class CDMSSelectCompiler(CDMSCompiler):
     EXPRS = {
         'exact': '{field} eq {value}',
+        'iexact': '{field} eq {value}',
         'lt': '{field} lt {value}',
         'lte': '{field} le {value}',
         'gt': '{field} gt {value}',
         'gte': '{field} ge {value}',
         'contains': 'substringof({value}, {field})',
         'icontains': 'substringof({value}, {field})',
+        'startswith': 'startswith({field}, {value})',
+        'istartswith': 'startswith({field}, tolower({value}))',
+        'endswith': 'endswith({field}, {value})',
+        'iendswith': 'endswith({field}, tolower({value}))',
+        'year': 'year({field}) eq {value}',
+        'month': 'month({field}) eq {value}',
+        'day': 'day({field}) eq {value}',
+        'hour': 'hour({field}) eq {value}',
+        'minute': 'minute({field}) eq {value}',
+        'second': 'second({field}) eq {value}',
     }
 
     def convert_value(self, value):
         if isinstance(value, Number):
             return value
         if isinstance(value, datetime.datetime):
-            # TODO e.g. "CreatedOn ge datetime'2015-01-01T00:00:00'"
-            raise NotImplementedError('TODO: format datetimes, should be easy')
+            return "datetime'{value}'".format(value=value.strftime("%Y-%m-%dT%H:%M:%S"))
         if isinstance(value, datetime.date):
             raise NotImplementedError('TODO: format date, should be easy')
         if isinstance(value, datetime.time):
