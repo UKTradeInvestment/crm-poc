@@ -129,7 +129,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__year=2016))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["year(DateField) eq 2016"]}
+            SimpleObj, kwargs={'filters': ["year(DateTimeField) eq 2016"]}
         )
         self.assertAPINotCalled(['create', 'update', 'delete', 'get'])
 
@@ -137,7 +137,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__month=12))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["month(DateField) eq 12"]}
+            SimpleObj, kwargs={'filters': ["month(DateTimeField) eq 12"]}
         )
         self.assertAPINotCalled(['create', 'update', 'delete', 'get'])
 
@@ -145,7 +145,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__day=1))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["day(DateField) eq 1"]}
+            SimpleObj, kwargs={'filters': ["day(DateTimeField) eq 1"]}
         )
         self.assertAPINotCalled(['create', 'update', 'delete', 'get'])
 
@@ -160,7 +160,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__hour=1))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["hour(DateField) eq 1"]}
+            SimpleObj, kwargs={'filters': ["hour(DateTimeField) eq 1"]}
         )
         self.assertAPINotCalled(['create', 'update', 'delete', 'get'])
 
@@ -168,7 +168,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__minute=1))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["minute(DateField) eq 1"]}
+            SimpleObj, kwargs={'filters': ["minute(DateTimeField) eq 1"]}
         )
         self.assertAPINotCalled(['create', 'update', 'delete', 'get'])
 
@@ -176,7 +176,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__second=1))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["second(DateField) eq 1"]}
+            SimpleObj, kwargs={'filters': ["second(DateTimeField) eq 1"]}
         )
         self.assertAPINotCalled(['create', 'update', 'delete', 'get'])
 
@@ -229,7 +229,7 @@ class ValueLookupsTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.filter(dt_field__exact=dt))
 
         self.assertAPIListCalled(
-            SimpleObj, kwargs={'filters': ["DateField eq datetime'2016-02-28T00:00:00'"]}
+            SimpleObj, kwargs={'filters': ["DateTimeField eq datetime'2016-02-28T00:00:00'"]}
         )
 
     def test_int(self):

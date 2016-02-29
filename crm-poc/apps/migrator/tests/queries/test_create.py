@@ -19,7 +19,7 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
-            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateField': None, 'IntField': None}}
+            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}}
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
@@ -50,7 +50,7 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
-            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateField': None, 'IntField': None}}
+            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}}
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
@@ -147,7 +147,7 @@ class CreateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         self.assertEqual(SimpleObj.objects.count(), 1)
         self.assertEqual(obj.cdms_pk, '')
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
 
 class CreateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
@@ -160,7 +160,7 @@ class CreateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         self.assertEqual(SimpleObj.objects.count(), 1)
         self.assertEqual(obj.cdms_pk, '')
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
     @skip('TODO: to be fixed')
     def test_with_bulk_create(self):
@@ -174,4 +174,4 @@ class CreateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
             SimpleObj(name='simple obj2')
         )
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()

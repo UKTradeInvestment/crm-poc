@@ -128,7 +128,7 @@ class GetTestCase(BaseGetTestCase):
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
             modified_on=modified_on, get_data={
                 'Name': 'new name',
-                'DateField': None,
+                'DateTimeField': None,
                 'IntField': None
             }
         )
@@ -154,7 +154,7 @@ class GetTestCase(BaseGetTestCase):
 
         SimpleObj.objects.get(pk=self.obj.pk)
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
     @skip('TO be decided: should be fail silently instead?')
     def test_cdms_exception_triggers_exception(self):
@@ -172,10 +172,10 @@ class GetTestCase(BaseGetTestCase):
 class GetSkipCDMSTestCase(BaseGetTestCase):
     def test_get_by_any_fields_allowed(self):
         SimpleObj.objects.mark_as_cdms_skip().get(pk=self.obj.pk)
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
         SimpleObj.objects.mark_as_cdms_skip().get(cdms_pk=self.obj.cdms_pk)
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
 
 class GetWithExtraManagerTestCase(BaseGetTestCase):

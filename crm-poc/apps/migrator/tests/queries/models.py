@@ -11,7 +11,7 @@ class MigratorManager(CDMSManager):
 class SimpleMigrator(BaseCDMSMigrator):
     fields = {
         'name': 'Name',
-        'dt_field': 'DateField',
+        'dt_field': 'DateTimeField',
         'int_field': 'IntField',
     }
     service = 'Simple'
@@ -21,6 +21,8 @@ class SimpleObj(CDMSModel):
     name = models.CharField(max_length=250)
     dt_field = models.DateTimeField(null=True)
     int_field = models.IntegerField(null=True)
+    
+    d_field = models.DateField(null=True)
 
     objects = MigratorManager()
     django_objects = models.Manager()

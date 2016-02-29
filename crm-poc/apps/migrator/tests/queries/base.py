@@ -44,7 +44,7 @@ class BaseMockedCDMSApiTestCase(TransactionTestCase):
                 '%s should not get called' % verb
             )
 
-    def assertNoAPINotCalled(self):
+    def assertNoAPICalled(self):
         self.assertAPINotCalled(['create', 'list', 'update', 'delete', 'get'])
 
     def assertAPICreateCalled(self, model, kwargs, tot=1):

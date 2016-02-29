@@ -36,7 +36,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
 
         # check cdms update called
         expected_data = mocked_cdms_get(modified_on=modified_on)(None, None)
-        expected_data.update({'Name': 'simple obj', 'DateField': None, 'IntField': None})
+        expected_data.update({'Name': 'simple obj', 'DateTimeField': None, 'IntField': None})
         self.assertAPIUpdateCalled(
             SimpleObj,
             kwargs={
@@ -220,7 +220,7 @@ class UpdateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         obj.save(cdms_skip=True)
         self.assertEqual(SimpleObj.objects.count(), 1)
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
         # check that the obj in the db changed
         obj = SimpleObj.objects.mark_as_cdms_skip().get(pk=obj.pk)
@@ -239,7 +239,7 @@ class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         SimpleObj.objects.mark_as_cdms_skip().filter(pk=obj.pk).update(name='simple obj')
         self.assertEqual(SimpleObj.objects.count(), 1)
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
         # check that the obj in the db changed
         obj = SimpleObj.objects.mark_as_cdms_skip().get(pk=obj.pk)
@@ -253,7 +253,7 @@ class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         SimpleObj.objects.mark_as_cdms_skip().filter(name__icontains='name').update(name='simple obj')
         self.assertEqual(SimpleObj.objects.count(), 2)
 
-        self.assertNoAPINotCalled()
+        self.assertNoAPICalled()
 
         # check that the objs in the db changed
         obj1 = SimpleObj.objects.mark_as_cdms_skip().get(pk=obj1.pk)
@@ -282,7 +282,7 @@ class SelectForUpdateCDMSTestCase(BaseMockedCDMSApiTestCase):
             entries = SimpleObj.objects.mark_as_cdms_skip().select_for_update().filter(name__icontains='name')
             self.assertEqual(len(entries), 1)
 
-            self.assertNoAPINotCalled()
+            self.assertNoAPICalled()
 
     @skip('TODO to be decided')
     def test_as_usual_with_extra_manager(self):
