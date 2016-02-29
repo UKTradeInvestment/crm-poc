@@ -24,7 +24,14 @@ class BaseMockedCDMSApiTestCase(TransactionTestCase):
 
             _args, _kwargs = mock_verb.call_args_list[index]
             self.assertEqual(_args, (model.cdms_migrator.service,))
-            self.assertDictEqual(_kwargs, single_kwargs)
+            self.assertListEqual(list(_kwargs.keys()), list(single_kwargs.keys()))
+
+            for key, value in _kwargs.items():
+                single_value = single_kwargs[key]
+                if isinstance(value, list):
+                    value = sorted(value)
+                    single_value = sorted(single_value)
+                self.assertEqual(value, single_value)
 
     def assertAPINotCalled(self, verbs):
         if not isinstance(verbs, list):
