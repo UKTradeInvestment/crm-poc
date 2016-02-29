@@ -58,3 +58,6 @@ class BaseMockedCDMSApiTestCase(TransactionTestCase):
 
     def assertAPIListCalled(self, model, kwargs, tot=1):
         self.assertAPICalled(model, 'list', kwargs=kwargs, tot=tot)
+
+    def assertAPIDeleteCalled(self, model, kwargs, tot=1):
+        self.assertAPICalled(model, 'delete', kwargs=kwargs, tot=tot)
