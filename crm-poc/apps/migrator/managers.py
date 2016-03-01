@@ -25,7 +25,7 @@ class CDMSQuerySet(models.QuerySet):
         self._cdms_known_related_objects = {}  # {rel_field_name, {cdms_pk: rel_obj}}
         self._iterable_class = CDMSModelIterable
 
-    def mark_as_cdms_skip(self):
+    def skip_cdms(self):
         self.cdms_skip = True
         return self
 

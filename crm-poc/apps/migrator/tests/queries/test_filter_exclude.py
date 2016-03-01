@@ -41,7 +41,7 @@ class FilterTestCase(BaseMockedCDMSApiTestCase):
 
 class FilterSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
     def test_filter(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().filter(name='something'))
+        list(SimpleObj.objects.skip_cdms().filter(name='something'))
         self.assertNoAPICalled()
 
 
@@ -78,7 +78,7 @@ class ExcludeTestCase(BaseMockedCDMSApiTestCase):
 
 class ExcludeSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
     def test_exclude(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().exclude(name='something'))
+        list(SimpleObj.objects.skip_cdms().exclude(name='something'))
         self.assertNoAPICalled()
 
 

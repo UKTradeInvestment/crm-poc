@@ -7,7 +7,7 @@ from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 class SingleObjMixin(object):
     def setUp(self):
         super(SingleObjMixin, self).setUp()
-        self.obj = SimpleObj.objects.mark_as_cdms_skip().create(
+        self.obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk', name='name'
         )
 
@@ -21,7 +21,7 @@ class AnnotateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().annotate(Count('name')))
+        list(SimpleObj.objects.skip_cdms().annotate(Count('name')))
         self.assertNoAPICalled()
 
 
@@ -34,7 +34,7 @@ class ReverseTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().reverse())
+        list(SimpleObj.objects.skip_cdms().reverse())
         self.assertNoAPICalled()
 
 
@@ -47,7 +47,7 @@ class DistinctTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().distinct())
+        list(SimpleObj.objects.skip_cdms().distinct())
         self.assertNoAPICalled()
 
 
@@ -60,7 +60,7 @@ class ValuesTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().values())
+        list(SimpleObj.objects.skip_cdms().values())
         self.assertNoAPICalled()
 
 
@@ -73,7 +73,7 @@ class ValuesListTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().values_list())
+        list(SimpleObj.objects.skip_cdms().values_list())
         self.assertNoAPICalled()
 
 
@@ -86,7 +86,7 @@ class DatesTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().dates('d_field', 'year'))
+        list(SimpleObj.objects.skip_cdms().dates('d_field', 'year'))
         self.assertNoAPICalled()
 
 
@@ -99,7 +99,7 @@ class DatetimesTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().datetimes('dt_field', 'year'))
+        list(SimpleObj.objects.skip_cdms().datetimes('dt_field', 'year'))
         self.assertNoAPICalled()
 
 
@@ -110,7 +110,7 @@ class NoneTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().none())
+        list(SimpleObj.objects.skip_cdms().none())
         self.assertNoAPICalled()
 
 
@@ -123,7 +123,7 @@ class SelectRelatedTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().select_related('fk_obj').get(pk=self.obj.pk)
+        SimpleObj.objects.skip_cdms().select_related('fk_obj').get(pk=self.obj.pk)
         self.assertNoAPICalled()
 
 
@@ -136,7 +136,7 @@ class PrefetchRelatedTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().prefetch_related('fk_obj').get(pk=self.obj.pk)
+        SimpleObj.objects.skip_cdms().prefetch_related('fk_obj').get(pk=self.obj.pk)
         self.assertNoAPICalled()
 
 
@@ -149,7 +149,7 @@ class ExtraTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().extra(select={'is_recent': "dt_field > '2006-01-01'"}))
+        list(SimpleObj.objects.skip_cdms().extra(select={'is_recent': "dt_field > '2006-01-01'"}))
         self.assertNoAPICalled()
 
 
@@ -162,7 +162,7 @@ class DeferTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().defer('name'))
+        list(SimpleObj.objects.skip_cdms().defer('name'))
         self.assertNoAPICalled()
 
 
@@ -175,7 +175,7 @@ class OnlyTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().only('name'))
+        list(SimpleObj.objects.skip_cdms().only('name'))
         self.assertNoAPICalled()
 
 
@@ -188,7 +188,7 @@ class RawTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().raw('select * from queries_simpleobj'))
+        list(SimpleObj.objects.skip_cdms().raw('select * from queries_simpleobj'))
         self.assertNoAPICalled()
 
 
@@ -201,7 +201,7 @@ class GetOrCreateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().get_or_create(name='name', defaults={'int_field': 1})
+        SimpleObj.objects.skip_cdms().get_or_create(name='name', defaults={'int_field': 1})
         self.assertNoAPICalled()
 
 
@@ -214,7 +214,7 @@ class UpdateOrCreateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().update_or_create(name='name', defaults={'int_field': 1})
+        SimpleObj.objects.skip_cdms().update_or_create(name='name', defaults={'int_field': 1})
         self.assertNoAPICalled()
 
 
@@ -227,7 +227,7 @@ class CountTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().count()
+        SimpleObj.objects.skip_cdms().count()
         self.assertNoAPICalled()
 
 
@@ -240,7 +240,7 @@ class InBulkTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().in_bulk([1, 2])
+        SimpleObj.objects.skip_cdms().in_bulk([1, 2])
         self.assertNoAPICalled()
 
 
@@ -253,7 +253,7 @@ class LatestTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().latest('dt_field')
+        SimpleObj.objects.skip_cdms().latest('dt_field')
         self.assertNoAPICalled()
 
 
@@ -266,7 +266,7 @@ class EarliestTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().earliest('dt_field')
+        SimpleObj.objects.skip_cdms().earliest('dt_field')
         self.assertNoAPICalled()
 
 
@@ -279,7 +279,7 @@ class FirstTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().first()
+        SimpleObj.objects.skip_cdms().first()
         self.assertNoAPICalled()
 
 
@@ -292,7 +292,7 @@ class LastTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().last()
+        SimpleObj.objects.skip_cdms().last()
         self.assertNoAPICalled()
 
 
@@ -305,7 +305,7 @@ class AggregateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().aggregate(Count('name'))
+        SimpleObj.objects.skip_cdms().aggregate(Count('name'))
         self.assertNoAPICalled()
 
 
@@ -318,5 +318,5 @@ class ExistsTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().exists()
+        SimpleObj.objects.skip_cdms().exists()
         self.assertNoAPICalled()

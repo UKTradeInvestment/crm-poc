@@ -113,7 +113,7 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
         if self.query.local_obj:
             return (self.query.local_obj, False)
 
-        results = self.query.model.objects.mark_as_cdms_skip().filter(cdms_pk=self.query.cdms_pk)
+        results = self.query.model.objects.skip_cdms().filter(cdms_pk=self.query.cdms_pk)
         if results:
             return (results[0], False)
 
