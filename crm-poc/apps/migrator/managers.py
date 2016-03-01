@@ -97,13 +97,22 @@ class CDMSQuerySet(models.QuerySet):
         return super(CDMSQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
 
     def _batched_insert(self, objs, fields, batch_size):
+        """
+        Django private method.
+        Overridden in order to set the cdms_skip flag if necessary.
+        """
         if not objs:
             return
         ops = connections[self.db].ops
         batch_size = (batch_size or max(ops.bulk_batch_size(fields, objs), 1))
         for batch in [objs[i:i + batch_size]
                       for i in range(0, len(objs), batch_size)]:
-            self.model._base_manager.skip_cdms()._insert(
+
+            mngr = self.model._base_manager
+            if self.cdms_skip:
+                mngr = mngr.skip_cdms()
+
+            mngr._insert(
                 batch, fields=fields, using=self.db
             )
 
