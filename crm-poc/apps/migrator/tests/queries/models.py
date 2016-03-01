@@ -17,12 +17,17 @@ class SimpleMigrator(BaseCDMSMigrator):
     service = 'Simple'
 
 
+class RelatedObj(models.Model):
+    pass
+
+
 class SimpleObj(CDMSModel):
     name = models.CharField(max_length=250)
     dt_field = models.DateTimeField(null=True)
     int_field = models.IntegerField(null=True)
-    
+
     d_field = models.DateField(null=True)
+    fk_obj = models.ForeignKey(RelatedObj, null=True)
 
     objects = MigratorManager()
     django_objects = models.Manager()

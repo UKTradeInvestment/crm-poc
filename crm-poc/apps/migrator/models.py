@@ -25,12 +25,12 @@ class CDMSModel(TimeStampedModel):
 
     def _do_insert(self, manager, using, fields, update_pk, raw):
         if self._cdms_skip:
-            manager = manager.mark_as_cdms_skip()
+            manager = manager.skip_cdms()
         return super(CDMSModel, self)._do_insert(manager, using, fields, update_pk, raw)
 
     def _do_update(self, base_qs, using, pk_val, values, update_fields, forced_update):
         if self._cdms_skip:
-            base_qs = base_qs.mark_as_cdms_skip()
+            base_qs = base_qs.skip_cdms()
         return super(CDMSModel, self)._do_update(base_qs, using, pk_val, values, update_fields, forced_update)
 
     class Meta:

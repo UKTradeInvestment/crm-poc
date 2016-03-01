@@ -10,7 +10,7 @@ from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
     def setUp(self):
         super(FilterLookupsTestCase, self).setUp()
-        self.obj = SimpleObj.objects.mark_as_cdms_skip().create(
+        self.obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk', name='before something after'
         )
 
@@ -213,7 +213,7 @@ class FilterLookupsTestCase(BaseMockedCDMSApiTestCase):
 class ValueLookupsTestCase(BaseMockedCDMSApiTestCase):
     def setUp(self):
         super(ValueLookupsTestCase, self).setUp()
-        self.obj = SimpleObj.objects.mark_as_cdms_skip().create(
+        self.obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk', name='before something after'
         )
 

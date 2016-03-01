@@ -1,5 +1,3 @@
-from unittest import skip
-
 from django.db.models import Count
 
 from migrator.tests.queries.models import SimpleObj
@@ -9,106 +7,99 @@ from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 class SingleObjMixin(object):
     def setUp(self):
         super(SingleObjMixin, self).setUp()
-        self.obj = SimpleObj.objects.mark_as_cdms_skip().create(
+        self.obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk', name='name'
         )
 
 
 class AnnotateTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.annotate(Count('name'))
+            SimpleObj.objects.annotate, Count('name')
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().annotate(Count('name')))
+        list(SimpleObj.objects.skip_cdms().annotate(Count('name')))
         self.assertNoAPICalled()
 
 
 class ReverseTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.reverse()
+            SimpleObj.objects.reverse
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().reverse())
+        list(SimpleObj.objects.skip_cdms().reverse())
         self.assertNoAPICalled()
 
 
 class DistinctTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.distinct()
+            SimpleObj.objects.distinct
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().distinct())
+        list(SimpleObj.objects.skip_cdms().distinct())
         self.assertNoAPICalled()
 
 
 class ValuesTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.values()
+            SimpleObj.objects.values
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().values())
+        list(SimpleObj.objects.skip_cdms().values())
         self.assertNoAPICalled()
 
 
 class ValuesListTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.values_list()
+            SimpleObj.objects.values_list
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().values_list())
+        list(SimpleObj.objects.skip_cdms().values_list())
         self.assertNoAPICalled()
 
 
 class DatesTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.dates('d_field')
+            SimpleObj.objects.dates, 'd_field', 'year'
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().dates('d_field', 'year'))
+        list(SimpleObj.objects.skip_cdms().dates('d_field', 'year'))
         self.assertNoAPICalled()
 
 
 class DatetimesTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.datetimes('d_field')
+            SimpleObj.objects.datetimes, 'd_field', 'year'
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().datetimes('dt_field', 'year'))
+        list(SimpleObj.objects.skip_cdms().datetimes('dt_field', 'year'))
         self.assertNoAPICalled()
 
 
@@ -119,26 +110,11 @@ class NoneTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().none())
+        list(SimpleObj.objects.skip_cdms().none())
         self.assertNoAPICalled()
 
 
-class AllTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
-    def test(self):
-        self.assertRaises(
-            NotImplementedError,
-            list, SimpleObj.objects.all()
-        )
-        self.assertNoAPICalled()
-
-    def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().all())
-        self.assertNoAPICalled()
-
-
-class SelectRelatedTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
+class SelectRelatedTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -146,13 +122,12 @@ class SelectRelatedTestCase(BaseMockedCDMSApiTestCase):
         )
         self.assertNoAPICalled()
 
-    @skip('TODO: should be allowed')
     def test_skip_cdms(self):
-        pass
+        SimpleObj.objects.skip_cdms().select_related('fk_obj').get(pk=self.obj.pk)
+        self.assertNoAPICalled()
 
 
-class PrefetchRelatedTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
+class PrefetchRelatedTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -160,27 +135,25 @@ class PrefetchRelatedTestCase(BaseMockedCDMSApiTestCase):
         )
         self.assertNoAPICalled()
 
-    @skip('TODO: should be allowed')
     def test_skip_cdms(self):
-        pass
+        SimpleObj.objects.skip_cdms().prefetch_related('fk_obj').get(pk=self.obj.pk)
+        self.assertNoAPICalled()
 
 
 class ExtraTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
-            list, SimpleObj.objects.extra(select={'is_recent': "dt_field > '2006-01-01'"})
+            SimpleObj.objects.extra, select={'is_recent': "dt_field > '2006-01-01'"}
         )
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().extra(select={'is_recent': "dt_field > '2006-01-01'"}))
+        list(SimpleObj.objects.skip_cdms().extra(select={'is_recent': "dt_field > '2006-01-01'"}))
         self.assertNoAPICalled()
 
 
 class DeferTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -189,12 +162,11 @@ class DeferTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().defer('name'))
+        list(SimpleObj.objects.skip_cdms().defer('name'))
         self.assertNoAPICalled()
 
 
 class OnlyTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -203,12 +175,11 @@ class OnlyTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().only('name'))
+        list(SimpleObj.objects.skip_cdms().only('name'))
         self.assertNoAPICalled()
 
 
 class RawTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -217,12 +188,11 @@ class RawTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().raw('select * from queries_simpleobj'))
+        list(SimpleObj.objects.skip_cdms().raw('select * from queries_simpleobj'))
         self.assertNoAPICalled()
 
 
 class GetOrCreateTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -231,12 +201,11 @@ class GetOrCreateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().get_or_create(name='name', defaults={'int_field': 1})
+        SimpleObj.objects.skip_cdms().get_or_create(name='name', defaults={'int_field': 1})
         self.assertNoAPICalled()
 
 
 class UpdateOrCreateTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -245,12 +214,11 @@ class UpdateOrCreateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().update_or_create(name='name', defaults={'int_field': 1})
+        SimpleObj.objects.skip_cdms().update_or_create(name='name', defaults={'int_field': 1})
         self.assertNoAPICalled()
 
 
 class CountTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -259,12 +227,11 @@ class CountTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().count()
+        SimpleObj.objects.skip_cdms().count()
         self.assertNoAPICalled()
 
 
 class InBulkTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -273,12 +240,11 @@ class InBulkTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().in_bulk([1, 2])
+        SimpleObj.objects.skip_cdms().in_bulk([1, 2])
         self.assertNoAPICalled()
 
 
 class LatestTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -287,12 +253,11 @@ class LatestTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().latest('dt_field')
+        SimpleObj.objects.skip_cdms().latest('dt_field')
         self.assertNoAPICalled()
 
 
 class EarliestTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -301,12 +266,11 @@ class EarliestTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().earliest('dt_field')
+        SimpleObj.objects.skip_cdms().earliest('dt_field')
         self.assertNoAPICalled()
 
 
 class FirstTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -315,12 +279,11 @@ class FirstTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().first()
+        SimpleObj.objects.skip_cdms().first()
         self.assertNoAPICalled()
 
 
 class LastTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -329,12 +292,11 @@ class LastTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().last()
+        SimpleObj.objects.skip_cdms().last()
         self.assertNoAPICalled()
 
 
 class AggregateTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -343,12 +305,11 @@ class AggregateTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().aggregate(Count('name'))
+        SimpleObj.objects.skip_cdms().aggregate(Count('name'))
         self.assertNoAPICalled()
 
 
 class ExistsTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: should raise exception')
     def test(self):
         self.assertRaises(
             NotImplementedError,
@@ -357,5 +318,5 @@ class ExistsTestCase(BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.mark_as_cdms_skip().exists()
+        SimpleObj.objects.skip_cdms().exists()
         self.assertNoAPICalled()

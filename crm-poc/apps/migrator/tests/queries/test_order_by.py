@@ -20,11 +20,11 @@ class OrderByTestCase(BaseMockedCDMSApiTestCase):
 
 class OrderBySkipCDMSTestCase(BaseMockedCDMSApiTestCase):
     def test_order_by_one_field(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().order_by('name'))
+        list(SimpleObj.objects.skip_cdms().order_by('name'))
         self.assertNoAPICalled()
 
     def test_order_by_two_fields(self):
-        list(SimpleObj.objects.mark_as_cdms_skip().order_by('name', 'int_field'))
+        list(SimpleObj.objects.skip_cdms().order_by('name', 'int_field'))
         self.assertNoAPICalled()
 
     @skip('TODO: to be fixed')

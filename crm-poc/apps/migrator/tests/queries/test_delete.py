@@ -7,7 +7,7 @@ from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 class BaseDeleteTestCase(BaseMockedCDMSApiTestCase):
     def setUp(self):
         super(BaseDeleteTestCase, self).setUp()
-        self.obj = SimpleObj.objects.mark_as_cdms_skip().create(
+        self.obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk', name='name'
         )
 
@@ -15,9 +15,9 @@ class BaseDeleteTestCase(BaseMockedCDMSApiTestCase):
 class DeleteTestCase(BaseDeleteTestCase):
     @skip('TODO: to be fixed')
     def test_delete_by_queryset(self):
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         SimpleObj.objects.filter(name='name').delete()
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
         self.assertAPIDeleteCalled(
             SimpleObj, kwargs={'guid': self.obj.cdms_pk}
@@ -26,9 +26,9 @@ class DeleteTestCase(BaseDeleteTestCase):
 
     @skip('TODO: to be fixed')
     def test_delete_from_obj(self):
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         self.obj.delete()
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
         self.assertAPIDeleteCalled(
             SimpleObj, kwargs={'guid': self.obj.cdms_pk}
@@ -45,16 +45,16 @@ class DeleteTestCase(BaseDeleteTestCase):
 
 class DeleteSkipCDMSTestCase(BaseDeleteTestCase):
     def test_delete_by_queryset(self):
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
-        SimpleObj.objects.mark_as_cdms_skip().filter(name='name').delete()
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
+        SimpleObj.objects.skip_cdms().filter(name='name').delete()
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
         self.assertNoAPICalled()
 
     def test_delete_from_obj(self):
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         self.obj.delete()
-        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
         self.assertNoAPICalled()
 

@@ -5,6 +5,17 @@ from .query import CDMSQuery, CDMSModelIterable, RefreshQuery, \
     InsertQuery, UpdateQuery
 
 
+def only_with_cdms_skip(func):
+    def wrapper(self, *args, **kwargs):
+        if not self.cdms_skip:
+            raise NotImplementedError(
+                '{method} not implemented yet'.format(method=func.__name__)
+            )
+
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class CDMSQuerySet(models.QuerySet):
     def __init__(self, model=None, query=None, using=None, hints=None):
         super(CDMSQuerySet, self).__init__(model=model, query=query, using=using, hints=hints)
@@ -14,7 +25,7 @@ class CDMSQuerySet(models.QuerySet):
         self._cdms_known_related_objects = {}  # {rel_field_name, {cdms_pk: rel_obj}}
         self._iterable_class = CDMSModelIterable
 
-    def mark_as_cdms_skip(self):
+    def skip_cdms(self):
         self.cdms_skip = True
         return self
 
@@ -29,14 +40,6 @@ class CDMSQuerySet(models.QuerySet):
     def none(self):
         self.cdms_query.set_empty()
         return super(CDMSQuerySet, self).none()
-
-    def select_for_update(self, *args, **kwargs):
-        """
-        Only supported when explicitly skipping cdms.
-        """
-        if not self.cdms_skip:
-            raise NotImplementedError('select_for_update not implemented yet')
-        return super(CDMSQuerySet, self).select_for_update(*args, **kwargs)
 
     def get(self, *args, **kwargs):
         original_cdms_skip = self.cdms_skip
@@ -138,6 +141,94 @@ class CDMSQuerySet(models.QuerySet):
             query.get_compiler().execute()
 
         return return_val
+
+    @only_with_cdms_skip
+    def annotate(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).annotate(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def reverse(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).reverse(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def select_for_update(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).select_for_update(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def distinct(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).distinct(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def values(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).values(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def values_list(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).values_list(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def select_related(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).select_related(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def prefetch_related(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).prefetch_related(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def extra(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).extra(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def defer(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).defer(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def only(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).only(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def raw(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).raw(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def get_or_create(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).get_or_create(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def update_or_create(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).update_or_create(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def count(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).count(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def in_bulk(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).in_bulk(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def earliest(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).earliest(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def latest(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).latest(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def first(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).first(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def last(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).last(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def aggregate(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).aggregate(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def exists(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).exists(*args, **kwargs)
 
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):

@@ -14,7 +14,7 @@ from cdms_api.utils import mocked_cdms_get
 class BaseGetTestCase(BaseMockedCDMSApiTestCase):
     def setUp(self):
         super(BaseGetTestCase, self).setUp()
-        self.obj = SimpleObj.objects.mark_as_cdms_skip().create(
+        self.obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk', name='name'
         )
 
@@ -50,13 +50,13 @@ class GetTestCase(BaseGetTestCase):
         MyObject.objects.get(cdms_pk=..) when local obj does not exist,
         should hit the cdms api, create a local obj and return it.
         """
-        SimpleObj.objects.mark_as_cdms_skip().all().delete()
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        SimpleObj.objects.skip_cdms().all().delete()
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
         cdms_pk = 'cdms-pk'
 
         obj = SimpleObj.objects.get(cdms_pk=cdms_pk)
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         self.assertEqual(obj.cdms_pk, cdms_pk)
 
         self.assertAPIGetCalled(
@@ -171,10 +171,10 @@ class GetTestCase(BaseGetTestCase):
 
 class GetSkipCDMSTestCase(BaseGetTestCase):
     def test_get_by_any_fields_allowed(self):
-        SimpleObj.objects.mark_as_cdms_skip().get(pk=self.obj.pk)
+        SimpleObj.objects.skip_cdms().get(pk=self.obj.pk)
         self.assertNoAPICalled()
 
-        SimpleObj.objects.mark_as_cdms_skip().get(cdms_pk=self.obj.cdms_pk)
+        SimpleObj.objects.skip_cdms().get(cdms_pk=self.obj.cdms_pk)
         self.assertNoAPICalled()
 
 
