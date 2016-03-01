@@ -24,10 +24,10 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             name='old name'
         )
 
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         obj.name = 'simple obj'
         obj.save()
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
 
         # check cdms get called
         self.assertAPIGetCalled(
@@ -59,10 +59,10 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         )
 
         # save
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         obj.name = 'new name'
         self.assertRaises(Exception, obj.save)
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
 
         self.assertAPIGetCalled(SimpleObj, kwargs={'guid': 'cdms-pk'})
         self.assertAPINotCalled(['create', 'list', 'delete'])
@@ -89,9 +89,9 @@ class UpdateWithManagerTestCase(BaseMockedCDMSApiTestCase):
             name='old name'
         )
 
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         SimpleObj.objects.filter(pk=obj.pk).update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
 
         # check cdms get called
         self.assertAPIGetCalled(
@@ -124,9 +124,9 @@ class UpdateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         SimpleObj.objects.mark_as_cdms_skip().create(cdms_pk='cdms-pk', name='old name')
         SimpleObj.objects.mark_as_cdms_skip().create(cdms_pk='cdms-pk2', name='old name 2')
 
-        self.assertEqual(SimpleObj.objects.count(), 2)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 2)
         SimpleObj.objects.filter(name__icontains='name').update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.count(), 2)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 2)
 
         # check cdms get called
         self.assertAPIGetCalled(
@@ -165,13 +165,13 @@ class UpdateWithManagerTestCase(BaseMockedCDMSApiTestCase):
             name='old name'
         )
 
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         self.assertRaises(
             Exception,
             SimpleObj.objects.filter(pk=obj.pk).update,
             name='simple obj'
         )
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
 
         self.assertAPIGetCalled(SimpleObj, kwargs={'guid': 'cdms-pk'})
         self.assertAPINotCalled(['create', 'list', 'delete'])
@@ -215,10 +215,10 @@ class UpdateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
             name='old name'
         )
 
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         obj.name = 'simple obj'
         obj.save(cdms_skip=True)
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
 
         self.assertNoAPICalled()
 
@@ -235,9 +235,9 @@ class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
             name='old name'
         )
 
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         SimpleObj.objects.mark_as_cdms_skip().filter(pk=obj.pk).update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
 
         self.assertNoAPICalled()
 
@@ -249,9 +249,9 @@ class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         obj1 = SimpleObj.objects.mark_as_cdms_skip().create(cdms_pk='cdms-pk', name='old name')
         obj2 = SimpleObj.objects.mark_as_cdms_skip().create(cdms_pk='cdms-pk2', name='old name 2')
 
-        self.assertEqual(SimpleObj.objects.count(), 2)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 2)
         SimpleObj.objects.mark_as_cdms_skip().filter(name__icontains='name').update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.count(), 2)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 2)
 
         self.assertNoAPICalled()
 

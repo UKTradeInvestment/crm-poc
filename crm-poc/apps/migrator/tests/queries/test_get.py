@@ -51,12 +51,12 @@ class GetTestCase(BaseGetTestCase):
         should hit the cdms api, create a local obj and return it.
         """
         SimpleObj.objects.mark_as_cdms_skip().all().delete()
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
 
         cdms_pk = 'cdms-pk'
 
         obj = SimpleObj.objects.get(cdms_pk=cdms_pk)
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         self.assertEqual(obj.cdms_pk, cdms_pk)
 
         self.assertAPIGetCalled(

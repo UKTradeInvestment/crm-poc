@@ -13,9 +13,9 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         obj.name = 'simple obj'
 
         self.assertEqual(obj.cdms_pk, '')
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         obj.save()
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
@@ -32,9 +32,9 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         obj = SimpleObj()
         obj.name = 'simple obj'
 
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         self.assertRaises(Exception, obj.save)
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
@@ -44,9 +44,9 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         """
         MyObject.objects.create() should create a new obj in local and cdms.
         """
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         obj = SimpleObj.objects.create(name='simple obj')
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
@@ -60,12 +60,12 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         """
         self.mocked_cdms_api.create.side_effect = Exception
 
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         self.assertRaises(
             Exception,
             SimpleObj.objects.create, name='simple obj'
         )
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
@@ -75,7 +75,7 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         We should support MyObject.objects.bulk_create(obj1, obj2) which should create the objects
         in local and cdms.
         """
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         SimpleObj.objects.bulk_create(
             SimpleObj(name='simple obj1'),
             SimpleObj(name='simple obj2')
@@ -97,7 +97,7 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         """
         self.mocked_cdms_api.create.side_effect = Exception
 
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         self.assertRaises(
             Exception,
             SimpleObj.objects.bulk_create, [
@@ -105,7 +105,7 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
                 SimpleObj(name='simple obj2')
             ]
         )
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
@@ -142,9 +142,9 @@ class CreateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         obj.name = 'simple obj'
 
         self.assertEqual(obj.cdms_pk, '')
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         obj.save(cdms_skip=True)
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         self.assertEqual(obj.cdms_pk, '')
 
         self.assertNoAPICalled()
@@ -155,9 +155,9 @@ class CreateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         """
         When calling MyObject.objects.mark_as_cdms_skip().create(), changes should only happen in local, not in cdms.
         """
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         obj = SimpleObj.objects.mark_as_cdms_skip().create(name='simple obj')
-        self.assertEqual(SimpleObj.objects.count(), 1)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 1)
         self.assertEqual(obj.cdms_pk, '')
 
         self.assertNoAPICalled()
@@ -168,7 +168,7 @@ class CreateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         We should support MyObject.objects.mark_as_cdms_skip().bulk_create(obj1, obj2) which should create the objects
         in local only.
         """
-        self.assertEqual(SimpleObj.objects.count(), 0)
+        self.assertEqual(SimpleObj.objects.mark_as_cdms_skip().count(), 0)
         SimpleObj.objects.mark_as_cdms_skip().bulk_create(
             SimpleObj(name='simple obj1'),
             SimpleObj(name='simple obj2')
