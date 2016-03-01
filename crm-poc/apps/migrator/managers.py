@@ -64,7 +64,7 @@ class CDMSQuerySet(models.QuerySet):
         """
         obj = self.model(**kwargs)
         self._for_write = True
-        obj.save(force_insert=True, using=self.db, cdms_skip=self.cdms_skip)
+        obj.save(force_insert=True, using=self.db, skip_cdms=self.cdms_skip)
         return obj
 
     def _filter_or_exclude(self, negate, *args, **kwargs):

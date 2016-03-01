@@ -86,14 +86,14 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
 class CreateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
     def test_success(self):
         """
-        When calling obj.save(cdms_skip=True), changes should only happen in local, not in cdms.
+        When calling obj.save(skip_cdms=True), changes should only happen in local, not in cdms.
         """
         obj = SimpleObj()
         obj.name = 'simple obj'
 
         self.assertEqual(obj.cdms_pk, '')
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
-        obj.save(cdms_skip=True)
+        obj.save(skip_cdms=True)
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         self.assertEqual(obj.cdms_pk, '')
 

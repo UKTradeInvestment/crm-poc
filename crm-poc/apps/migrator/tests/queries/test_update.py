@@ -207,7 +207,7 @@ class UpdateWithExtraManagerTestCase(BaseMockedCDMSApiTestCase):
 class UpdateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
     def test_save(self):
         """
-        obj.save(cdms_skip=True) should only update the obj in local.
+        obj.save(skip_cdms=True) should only update the obj in local.
         """
         # create without cdms and then save
         obj = SimpleObj.objects.skip_cdms().create(
@@ -217,7 +217,7 @@ class UpdateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
 
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         obj.name = 'simple obj'
-        obj.save(cdms_skip=True)
+        obj.save(skip_cdms=True)
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
 
         self.assertNoAPICalled()
