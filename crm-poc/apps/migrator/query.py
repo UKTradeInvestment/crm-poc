@@ -136,7 +136,7 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
                 obj, cdms_data,
                 cdms_known_related_objects=self.query.cdms_known_related_objects
             )
-            obj.save(cdms_skip=True)
+            obj.save(skip_cdms=True)
 
             # 2nd save for the modified/created field (this can be improved)
             update_fields = {}

@@ -150,7 +150,7 @@ class GetTestCase(BaseGetTestCase):
         If for some reasons cdms_pk is blank, the cdms api call shouldn't happen.
         """
         self.obj.cdms_pk = ''
-        self.obj.save(cdms_skip=True)
+        self.obj.save(skip_cdms=True)
 
         SimpleObj.objects.get(pk=self.obj.pk)
 

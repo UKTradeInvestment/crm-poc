@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, connections
 from django.db.models.query_utils import Q
 
 from .query import CDMSQuery, CDMSModelIterable, RefreshQuery, \
@@ -64,7 +64,7 @@ class CDMSQuerySet(models.QuerySet):
         """
         obj = self.model(**kwargs)
         self._for_write = True
-        obj.save(force_insert=True, using=self.db, cdms_skip=self.cdms_skip)
+        obj.save(force_insert=True, using=self.db, skip_cdms=self.cdms_skip)
         return obj
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
@@ -95,6 +95,25 @@ class CDMSQuerySet(models.QuerySet):
                     clone.query.add_q(q)
                     clone.cdms_query.add_q(q)
         return super(CDMSQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
+
+    def _batched_insert(self, objs, fields, batch_size):
+        """
+        Django private method.
+        Overridden in order to set the cdms_skip flag if necessary.
+        """
+        if not objs:
+            return
+        ops = connections[self.db].ops
+        batch_size = (batch_size or max(ops.bulk_batch_size(fields, objs), 1))
+        batches = [objs[i:i + batch_size] for i in range(0, len(objs), batch_size)]
+        for batch in batches:
+            mngr = self.model._base_manager
+            if self.cdms_skip:
+                mngr = mngr.skip_cdms()
+
+            mngr._insert(
+                batch, fields=fields, using=self.db
+            )
 
     def _insert(self, objs, fields, return_id=False, raw=False, using=None):
         return_val = super(CDMSQuerySet, self)._insert(objs, fields, return_id=return_id, raw=raw, using=using)
@@ -229,6 +248,10 @@ class CDMSQuerySet(models.QuerySet):
     @only_with_cdms_skip
     def exists(self, *args, **kwargs):
         return super(CDMSQuerySet, self).exists(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def bulk_create(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).bulk_create(*args, **kwargs)
 
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):

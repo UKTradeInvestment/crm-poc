@@ -15,7 +15,7 @@ class CDMSModel(TimeStampedModel):
     def save(self, *args, **kwargs):
         # a bit hacky but it makes things work :-P
         original_cdms_skip = self._cdms_skip
-        self._cdms_skip = kwargs.pop('cdms_skip', False)
+        self._cdms_skip = kwargs.pop('skip_cdms', False)
         try:
             ret = super(CDMSModel, self).save(*args, **kwargs)
         finally:

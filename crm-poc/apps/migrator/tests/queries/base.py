@@ -24,7 +24,7 @@ class BaseMockedCDMSApiTestCase(TransactionTestCase):
 
             _args, _kwargs = mock_verb.call_args_list[index]
             self.assertEqual(_args, (model.cdms_migrator.service,))
-            self.assertListEqual(list(_kwargs.keys()), list(single_kwargs.keys()))
+            self.assertEqual(set(_kwargs.keys()), set(single_kwargs.keys()))
 
             for key, value in _kwargs.items():
                 single_value = single_kwargs[key]
