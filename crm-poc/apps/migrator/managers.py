@@ -105,9 +105,8 @@ class CDMSQuerySet(models.QuerySet):
             return
         ops = connections[self.db].ops
         batch_size = (batch_size or max(ops.bulk_batch_size(fields, objs), 1))
-        for batch in [objs[i:i + batch_size]
-                      for i in range(0, len(objs), batch_size)]:
-
+        batches = [objs[i:i + batch_size] for i in range(0, len(objs), batch_size)]
+        for batch in batches:
             mngr = self.model._base_manager
             if self.cdms_skip:
                 mngr = mngr.skip_cdms()
