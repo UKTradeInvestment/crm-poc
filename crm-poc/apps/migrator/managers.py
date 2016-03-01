@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, connections
 from django.db.models.query_utils import Q
 
 from .query import CDMSQuery, CDMSModelIterable, RefreshQuery, \
@@ -95,6 +95,17 @@ class CDMSQuerySet(models.QuerySet):
                     clone.query.add_q(q)
                     clone.cdms_query.add_q(q)
         return super(CDMSQuerySet, self)._filter_or_exclude(negate, *args, **kwargs)
+
+    def _batched_insert(self, objs, fields, batch_size):
+        if not objs:
+            return
+        ops = connections[self.db].ops
+        batch_size = (batch_size or max(ops.bulk_batch_size(fields, objs), 1))
+        for batch in [objs[i:i + batch_size]
+                      for i in range(0, len(objs), batch_size)]:
+            self.model._base_manager.skip_cdms()._insert(
+                batch, fields=fields, using=self.db
+            )
 
     def _insert(self, objs, fields, return_id=False, raw=False, using=None):
         return_val = super(CDMSQuerySet, self)._insert(objs, fields, return_id=return_id, raw=raw, using=using)
@@ -229,6 +240,10 @@ class CDMSQuerySet(models.QuerySet):
     @only_with_cdms_skip
     def exists(self, *args, **kwargs):
         return super(CDMSQuerySet, self).exists(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def bulk_create(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).bulk_create(*args, **kwargs)
 
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):
