@@ -1,6 +1,6 @@
 from django.db import models
 
-from model_utils.models import TimeStampedModel
+from core.lib_models import TimeStampedModel
 
 
 class CDMSModel(TimeStampedModel):

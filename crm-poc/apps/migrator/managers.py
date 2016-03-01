@@ -22,12 +22,21 @@ class CDMSQuerySet(models.QuerySet):
         clone = super(CDMSQuerySet, self)._clone(**kwargs)
         clone.cdms_query = self.cdms_query  # we might need to clone this
         clone.cdms_skip = self.cdms_skip
+
         clone._cdms_known_related_objects = self._cdms_known_related_objects
         return clone
 
     def none(self):
         self.cdms_query.set_empty()
         return super(CDMSQuerySet, self).none()
+
+    def select_for_update(self, *args, **kwargs):
+        """
+        Only supported when explicitly skipping cdms.
+        """
+        if not self.cdms_skip:
+            raise NotImplementedError('select_for_update not implemented yet')
+        return super(CDMSQuerySet, self).select_for_update(*args, **kwargs)
 
     def get(self, *args, **kwargs):
         original_cdms_skip = self.cdms_skip
@@ -43,6 +52,16 @@ class CDMSQuerySet(models.QuerySet):
         finally:
             # restore old setting
             self.cdms_skip = original_cdms_skip
+        return obj
+
+    def create(self, **kwargs):
+        """
+        Creates a new object with the given kwargs, saving it to the database
+        and returning the created object.
+        """
+        obj = self.model(**kwargs)
+        self._for_write = True
+        obj.save(force_insert=True, using=self.db, cdms_skip=self.cdms_skip)
         return obj
 
     def _filter_or_exclude(self, negate, *args, **kwargs):
