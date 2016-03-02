@@ -132,7 +132,7 @@ class CDMSQuerySet(models.QuerySet):
 
             # update cdms_pk local
             obj.cdms_pk = cdms_pk
-            self.filter(pk=return_val).update(cdms_pk=cdms_pk)
+            self._clone().skip_cdms().filter(pk=return_val).update(cdms_pk=cdms_pk)
 
         return return_val
 
@@ -147,13 +147,10 @@ class CDMSQuerySet(models.QuerySet):
                     cdms_pk = value
                 else:
                     model_values.append(
-                        (field, value)
+                        (field.name, value)
                     )
 
-            if not cdms_pk:
-                raise NotImplementedError(
-                    'Cannot update without cdms pk'
-                )
+            assert cdms_pk, 'Cannot update without cdms pk'
 
             query = UpdateQuery(self.model)
             query.add_update_fields(cdms_pk, model_values)
@@ -252,6 +249,10 @@ class CDMSQuerySet(models.QuerySet):
     @only_with_cdms_skip
     def bulk_create(self, *args, **kwargs):
         return super(CDMSQuerySet, self).bulk_create(*args, **kwargs)
+
+    @only_with_cdms_skip
+    def update(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).update(*args, **kwargs)
 
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):

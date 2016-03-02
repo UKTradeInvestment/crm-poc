@@ -1,5 +1,3 @@
-from unittest import skip
-
 from django.db import transaction
 from django.utils import timezone
 
@@ -12,7 +10,10 @@ from cdms_api.utils import mocked_cdms_get
 class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
     def test_save(self):
         """
-        obj.save() should update the obj in local and cdms.
+        obj.save() should
+            - get the related cdms obj
+            - update the cdms obj
+            - save local obj
         """
         # mock get call
         modified_on = timezone.now()
@@ -24,6 +25,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             name='old name'
         )
 
+        # save
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         obj.name = 'simple obj'
         obj.save()
@@ -48,11 +50,12 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
 
     def test_exception_triggers_rollback(self):
         """
-        In case of exceptions during obj.save(), no changes should be reflected in the db.
+        In case of exceptions during cdms calls, no changes should be reflected in the db.
         """
-        # set up
+        # mock update call
         self.mocked_cdms_api.update.side_effect = Exception
 
+        # create without cdms and then save
         obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk',
             name='old name'
@@ -64,148 +67,17 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         self.assertRaises(Exception, obj.save)
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
 
-        self.assertAPIGetCalled(SimpleObj, kwargs={'guid': 'cdms-pk'})
-        self.assertAPINotCalled(['create', 'list', 'delete'])
-
-        # check that the obj in the db didn't change
-        obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
-        self.assertEqual(obj.name, 'old name')
-
-
-class UpdateWithManagerTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: to be fixed')
-    def test_update_single_obj(self):
-        """
-        We should probably support MyObject.objects.filter(pk=...).update(...) or just raise NotImplementedError
-        instead.
-        """
-        # mock get call
-        modified_on = timezone.now()
-        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(modified_on=modified_on)
-
-        # create without cdms and then save
-        obj = SimpleObj.objects.skip_cdms().create(
-            cdms_pk='cdms-pk',
-            name='old name'
-        )
-
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        SimpleObj.objects.filter(pk=obj.pk).update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-
         # check cdms get called
         self.assertAPIGetCalled(
             SimpleObj, kwargs={'guid': 'cdms-pk'}
         )
-
-        # check cdms update called
-        expected_data = mocked_cdms_get(modified_on=modified_on)(None, None)
-        expected_data.update({'Name': 'simple obj'})
-        self.assertAPIUpdateCalled(
-            SimpleObj,
-            kwargs={
-                'guid': 'cdms-pk',
-                'data': expected_data
-            }
-        )
-        self.assertAPINotCalled(['list', 'create', 'delete'])
-
-    @skip('TODO: to be fixed')
-    def test_update_multiple_objs(self):
-        """
-        We should probably support MyObject.objects.filter(name__icontains='asdfas').update(...) or just raise
-        NotImplementedError instead.
-        """
-        # mock get call
-        modified_on = timezone.now()
-        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(modified_on=modified_on)
-
-        # create without cdms and then save
-        SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk', name='old name')
-        SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk2', name='old name 2')
-
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 2)
-        SimpleObj.objects.filter(name__icontains='name').update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 2)
-
-        # check cdms get called
-        self.assertAPIGetCalled(
-            SimpleObj, kwargs=[
-                {'guid': 'cdms-pk'}, {'guid': 'cdms-pk2'}
-            ]
-        )
-
-        # check cdms update called
-        expected_data = mocked_cdms_get(modified_on=modified_on)(None, None)
-        expected_data.update({'Name': 'simple obj'})
-        self.assertAPIUpdateCalled(
-            SimpleObj,
-            kwargs=[
-                {
-                    'guid': 'cdms-pk',
-                    'data': expected_data
-                },
-                {
-                    'guid': 'cdms-pk2',
-                    'data': expected_data
-                }
-            ]
-        )
-        self.assertAPINotCalled(['list', 'create', 'delete'])
-
-    @skip('TODO: to be fixed')
-    def test_exception_triggers_rollback(self):
-        """
-        We should raise exception and rollback if the cdms update fails.
-        """
-        self.mocked_cdms_api.update.side_effect = Exception
-
-        obj = SimpleObj.objects.skip_cdms().create(
-            cdms_pk='cdms-pk',
-            name='old name'
-        )
-
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        self.assertRaises(
-            Exception,
-            SimpleObj.objects.filter(pk=obj.pk).update,
-            name='simple obj'
-        )
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-
-        self.assertAPIGetCalled(SimpleObj, kwargs={'guid': 'cdms-pk'})
         self.assertAPINotCalled(['create', 'list', 'delete'])
 
         # check that the obj in the db didn't change
         obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
         self.assertEqual(obj.name, 'old name')
 
-
-class UpdateWithExtraManagerTestCase(BaseMockedCDMSApiTestCase):
-    @skip('TODO: to be decided')
-    def test_update_single_obj(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """
-        pass
-
-    @skip('TODO: to be decided')
-    def test_update_multiple_objs(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """
-        pass
-
-    @skip('TODO: to be decided')
-    def test_exception_triggers_rollback(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """
-        pass
-
-
-class UpdateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
-    def test_save(self):
+    def test_save_with_skip_cdms(self):
         """
         obj.save(skip_cdms=True) should only update the obj in local.
         """
@@ -227,8 +99,24 @@ class UpdateWithSaveSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         self.assertEqual(obj.name, 'simple obj')
 
 
-class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
-    def test_update_single_obj(self):
+class UpdateWithManagerTestCase(BaseMockedCDMSApiTestCase):
+    def test_update(self):
+        """
+        MyObject.objects.filter(...).update(...) not currently implemented
+        """
+        SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk', name='old name')
+
+        self.assertRaises(
+            NotImplementedError,
+            SimpleObj.objects.filter(name__icontains='name').update,
+            name='new name'
+        )
+        self.assertNoAPICalled()
+
+    def test_update_with_skip_cdms(self):
+        """
+        MyObject.objects.skip_cdms().filter(...).update(...) should only update local objs.
+        """
         # create without cdms and then save
         obj = SimpleObj.objects.skip_cdms().create(
             cdms_pk='cdms-pk',
@@ -245,36 +133,20 @@ class UpdateWithManagerSkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
         self.assertEqual(obj.name, 'simple obj')
 
-    def test_update_multiple_objs(self):
-        obj1 = SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk', name='old name')
-        obj2 = SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk2', name='old name 2')
-
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 2)
-        SimpleObj.objects.skip_cdms().filter(name__icontains='name').update(name='simple obj')
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 2)
-
-        self.assertNoAPICalled()
-
-        # check that the objs in the db changed
-        obj1 = SimpleObj.objects.skip_cdms().get(pk=obj1.pk)
-        self.assertEqual(obj1.name, 'simple obj')
-        obj2 = SimpleObj.objects.skip_cdms().get(pk=obj2.pk)
-        self.assertEqual(obj2.name, 'simple obj')
-
 
 class SelectForUpdateCDMSTestCase(BaseMockedCDMSApiTestCase):
-    def test_not_implemented_without_skipping_cdms(self):
+    def test_select_for_update(self):
         """
-        MyObject.objects.select_for_update() not supported yet.
+        MyObject.objects.select_for_update() not currently implemented.
         """
         self.assertRaises(
             NotImplementedError,
             SimpleObj.objects.select_for_update
         )
 
-    def test_as_usual_with_cdms_skip(self):
+    def test_select_for_update_with_skip_cdms(self):
         """
-        MyObject.objects.skip_cdms().select_for_update() working as usual.
+        MyObject.objects.skip_cdms().select_for_update() should only work on local objs.
         """
         SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk', name='old name')
 
@@ -283,10 +155,3 @@ class SelectForUpdateCDMSTestCase(BaseMockedCDMSApiTestCase):
             self.assertEqual(len(entries), 1)
 
             self.assertNoAPICalled()
-
-    @skip('TODO to be decided')
-    def test_as_usual_with_extra_manager(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """
-        pass
