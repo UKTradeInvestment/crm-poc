@@ -1,4 +1,4 @@
-from django.db import models, connections
+from django.db import models, connections, transaction
 from django.db.models.query_utils import Q
 
 from .query import CDMSQuery, CDMSModelIterable, RefreshQuery, \
@@ -136,6 +136,25 @@ class CDMSQuerySet(models.QuerySet):
 
         return return_val
 
+    def update(self, **kwargs):
+        with transaction.atomic():
+            if not self.cdms_skip:
+                objs = [self.get(pk=obj.pk) for obj in self._clone().skip_cdms()]
+            else:
+                objs = []
+
+            return_val = super(CDMSQuerySet, self).update(**kwargs)
+
+            # only gets executed if not self.cdms_skip
+            values = [(k, v) for k, v in kwargs.items()]
+            for obj in objs:
+                assert obj.cdms_pk, 'Cannot update without cdms pk'
+
+                query = UpdateQuery(self.model)
+                query.add_update_fields(obj.cdms_pk, values)
+                query.get_compiler().execute()
+            return return_val
+
     def _update(self, values):
         return_val = super(CDMSQuerySet, self)._update(values)
 
@@ -249,10 +268,6 @@ class CDMSQuerySet(models.QuerySet):
     @only_with_cdms_skip
     def bulk_create(self, *args, **kwargs):
         return super(CDMSQuerySet, self).bulk_create(*args, **kwargs)
-
-    @only_with_cdms_skip
-    def update(self, *args, **kwargs):
-        return super(CDMSQuerySet, self).update(*args, **kwargs)
 
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):
