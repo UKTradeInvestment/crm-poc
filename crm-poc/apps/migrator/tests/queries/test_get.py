@@ -1,8 +1,10 @@
 import datetime
-from unittest import skip
 
 from django.utils import timezone
 from django.conf import settings
+from django.core.exceptions import MultipleObjectsReturned
+
+from cdms_api.exceptions import CDMSNotFoundException
 
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
@@ -19,11 +21,10 @@ class BaseGetTestCase(BaseMockedCDMSApiTestCase):
         )
 
 
-class GetTestCase(BaseGetTestCase):
-    def test_get_by_id(self):
+class GetByIdTestCase(BaseGetTestCase):
+    def test_local_exists(self):
         """
-        MyObject.objects.get(pk=..) should hit the cdms api and
-        return the local obj.
+        MyObject.objects.get(pk=..) should hit the cdms api and return the local obj.
         """
         obj = SimpleObj.objects.get(pk=self.obj.pk)
         self.assertEqual(obj.pk, self.obj.pk)
@@ -31,8 +32,23 @@ class GetTestCase(BaseGetTestCase):
         self.assertAPIGetCalled(
             SimpleObj, kwargs={'guid': self.obj.cdms_pk}
         )
+        self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    def test_get_by_cdms_pk(self):
+    def test_local_doesnt_exist(self):
+        """
+        MyObject.objects.get(pk=..) should raise DoesNotExist and not hit the db if the local obj doesn't exist
+        """
+        self.assertRaises(
+            SimpleObj.DoesNotExist,
+            SimpleObj.objects.get,
+            pk=0
+        )
+
+        self.assertNoAPICalled()
+
+
+class GetByCmdPKTestCase(BaseGetTestCase):
+    def test_local_exists(self):
         """
         MyObject.objects.get(cdms_pk=..) when local obj exists,
         should hit the cdms api and return the local obj.
@@ -43,27 +59,59 @@ class GetTestCase(BaseGetTestCase):
         self.assertAPIGetCalled(
             SimpleObj, kwargs={'guid': self.obj.cdms_pk}
         )
+        self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    @skip('TODO: to be fixed')
-    def test_get_by_cdms_pk_when_local_obj_doesnt_exist(self):
+    def test_local_doesnt_exist(self):
         """
         MyObject.objects.get(cdms_pk=..) when local obj does not exist,
         should hit the cdms api, create a local obj and return it.
         """
+        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
+            modified_on=timezone.now(),
+            get_data={
+                'Name': 'new name',
+                'DateTimeField': None,
+                'IntField': None
+            }
+        )
+
         SimpleObj.objects.skip_cdms().all().delete()
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
-        cdms_pk = 'cdms-pk'
-
-        obj = SimpleObj.objects.get(cdms_pk=cdms_pk)
+        obj = SimpleObj.objects.get(cdms_pk='cdms-pk')
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        self.assertEqual(obj.cdms_pk, cdms_pk)
+        self.assertEqual(obj.cdms_pk, 'cdms-pk')
+        self.assertEqual(obj.name, 'new name')
 
         self.assertAPIGetCalled(
-            SimpleObj, kwargs={'guid': cdms_pk}
+            SimpleObj, kwargs={'guid': 'cdms-pk'}
         )
+        self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    def test_get_by_other_field(self):
+    def test_neither_local_nor_cdms_obj_exists(self):
+        """
+        MyObject.objects.get(cdms_pk=..) when neither local nor cdms obj exists
+        should raise MyObject.DoesNotExist.
+        """
+        self.mocked_cdms_api.get.side_effect = CDMSNotFoundException('not found')
+
+        SimpleObj.objects.skip_cdms().all().delete()
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
+
+        self.assertRaises(
+            SimpleObj.DoesNotExist,
+            SimpleObj.objects.get, cdms_pk='cdms-pk'
+        )
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
+
+        self.assertAPIGetCalled(
+            SimpleObj, kwargs={'guid': 'cdms-pk'}
+        )
+        self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
+
+
+class GetByOtherFieldsTestCase(BaseGetTestCase):
+    def test(self):
         """
         MyObject.objects.get(other_field=..) should work as with pk or id.
         """
@@ -73,8 +121,23 @@ class GetTestCase(BaseGetTestCase):
         self.assertAPIGetCalled(
             SimpleObj, kwargs={'guid': self.obj.cdms_pk}
         )
+        self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    def test_get_with_objs_in_sync(self):
+    def test_multiple_objects_returned(self):
+        SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk1', name='name')
+        SimpleObj.objects.skip_cdms().create(cdms_pk='cdms-pk2', name='name')
+
+        self.assertRaises(
+            MultipleObjectsReturned,
+            SimpleObj.objects.get,
+            name='name'
+        )
+
+        self.assertNoAPICalled()
+
+
+class SyncGetTestCase(BaseGetTestCase):
+    def test_with_objs_in_sync(self):
         """
         If the cdms obj and local obj are in sync:
             - get obj from local db
@@ -95,11 +158,10 @@ class GetTestCase(BaseGetTestCase):
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    @skip('TO be decided: should we find a strategy for this case as well?')
-    def test_get_with_local_more_up_to_date(self):
+    def test_with_local_more_up_to_date(self):
         """
         If the local obj is more up to date, it means that the last syncronisation didn't
-        work as it should have so we raise ObjectsNotInSyncException.
+        work as it should have, so we raise ObjectsNotInSyncException.
         """
         modified_on = self.obj.modified - datetime.timedelta(
             seconds=settings.CDMS_SYNC_DELTA + 0.001
@@ -117,16 +179,17 @@ class GetTestCase(BaseGetTestCase):
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    def test_with_get_cdms_more_up_to_date(self):
+    def test_with_cdms_more_up_to_date(self):
         """
-        If the cdms obj is more recent than the local one:
+        If the cdms obj includes more recent changes:
             - get obj from local db
             - get cdms_obj from cdms
-            - update obj based on cdms_obj
+            - update obj from cdms_obj
         """
         modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
-            modified_on=modified_on, get_data={
+            modified_on=modified_on,
+            get_data={
                 'Name': 'new name',
                 'DateTimeField': None,
                 'IntField': None
@@ -144,23 +207,9 @@ class GetTestCase(BaseGetTestCase):
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
 
-    @skip('TODO to be fixed')
-    def test_get_without_cdms_pk(self):
-        """
-        If for some reasons cdms_pk is blank, the cdms api call shouldn't happen.
-        """
-        self.obj.cdms_pk = ''
-        self.obj.save(skip_cdms=True)
-
-        SimpleObj.objects.get(pk=self.obj.pk)
-
-        self.assertNoAPICalled()
-
-    @skip('TO be decided: should be fail silently instead?')
     def test_cdms_exception_triggers_exception(self):
         """
         If an exception happens when accessing cdms, the exception is propagated.
-        TODO should be catch and fail silently instead?
         """
         self.mocked_cdms_api.get.side_effect = Exception
 
@@ -170,24 +219,23 @@ class GetTestCase(BaseGetTestCase):
 
 
 class GetSkipCDMSTestCase(BaseGetTestCase):
-    def test_get_by_any_fields_allowed(self):
+    def test_get_by_any_fields(self):
+        """
+        Clazz.objects.skip_cdms().get(...) should not hit cdms.
+        """
         SimpleObj.objects.skip_cdms().get(pk=self.obj.pk)
         self.assertNoAPICalled()
 
         SimpleObj.objects.skip_cdms().get(cdms_pk=self.obj.cdms_pk)
         self.assertNoAPICalled()
 
-
-class GetWithExtraManagerTestCase(BaseGetTestCase):
-    @skip('TODO to be decided')
-    def test_get(self):
+    def test_object_not_found(self):
         """
-        The output when using an extra manager at the moment is unexpected and should not be used.
+        Clazz.objects.skip_cdms().get(...) should raise DoesNotExist and not hit cdms.
         """
-        pass
-
-    @skip('TODO: to be decided')
-    def test_exception_triggers_rollback(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """
+        self.assertRaises(
+            SimpleObj.DoesNotExist,
+            SimpleObj.objects.skip_cdms().get,
+            cdms_pk='invalid'
+        )
+        self.assertNoAPICalled()

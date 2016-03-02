@@ -1,6 +1,10 @@
 from django.db import models, connections
 from django.db.models.query_utils import Q
 
+from django.core.exceptions import ObjectDoesNotExist
+
+from cdms_api.exceptions import CDMSNotFoundException
+
 from .query import CDMSQuery, CDMSModelIterable, RefreshQuery, \
     InsertQuery, UpdateQuery
 
@@ -52,6 +56,20 @@ class CDMSQuerySet(models.QuerySet):
                 query = RefreshQuery(self.model)
                 query.set_local_obj(obj)
                 obj = query.get_compiler().execute()
+        except ObjectDoesNotExist as e:
+            # if not cdms_skip and get(cdms_pk=...), try to get the obj from cdms instead
+            cdms_pk = kwargs.get('cdms_pk')
+            if not original_cdms_skip and len(kwargs) == 1 and cdms_pk:
+                try:
+                    # get cdms object
+                    query = RefreshQuery(self.model)
+                    query.set_cdms_pk(cdms_pk)
+
+                    obj = query.get_compiler().execute()
+                except CDMSNotFoundException:
+                    raise e
+            else:
+                raise e
         finally:
             # restore old setting
             self.cdms_skip = original_cdms_skip
