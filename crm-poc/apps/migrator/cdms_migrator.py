@@ -37,13 +37,12 @@ class BaseCDMSMigrator(object):
 
     def update_cdms_data_from_local(self, local_obj, cdms_data):
         values = [
-            (field, getattr(local_obj, field.name)) for field in local_obj._meta.fields
+            (field.name, getattr(local_obj, field.name)) for field in local_obj._meta.fields
         ]
         return self.update_cdms_data_from_values(values, cdms_data)
 
     def update_cdms_data_from_values(self, values, cdms_data):
-        for field, value in values:
-            field_name = field.name
+        for field_name, value in values:
             try:
                 cdms_field, mapping_func, _ = self.get_fields_mapping(field_name)
             except NotMappingFieldException:

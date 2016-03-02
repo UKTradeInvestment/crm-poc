@@ -148,7 +148,7 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
                 obj.cdms_pk = self.query.cdms_pk
                 update_fields['created'] = obj.created
                 update_fields['cdms_pk'] = obj.cdms_pk
-            manager.filter(pk=obj.pk).update(**update_fields)
+            manager.skip_cdms().filter(pk=obj.pk).update(**update_fields)
 
         return obj
 
