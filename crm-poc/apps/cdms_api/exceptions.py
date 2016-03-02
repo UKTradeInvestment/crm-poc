@@ -5,5 +5,9 @@ class CDMSException(Exception):
         self.status_code = status_code
 
 
+class CDMSNotFoundException(CDMSException):
+    pass
+
+
 class CDMSUnauthorizedException(CDMSException):
     pass

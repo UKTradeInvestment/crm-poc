@@ -9,7 +9,7 @@ from django.utils.text import slugify
 
 from pyquery import PyQuery
 
-from .exceptions import CDMSException, CDMSUnauthorizedException
+from .exceptions import CDMSException, CDMSUnauthorizedException, CDMSNotFoundException
 
 CRM_BASE_URL = settings.CDMS_BASE_URL
 
@@ -24,6 +24,11 @@ class CDMSApi(object):
     CRM_BASE_URL = settings.CDMS_BASE_URL
     CRM_ADFS_URL = settings.CDMS_ADFS_URL
     CRM_REST_BASE_URL = '%s/XRMServices/2011/OrganizationData.svc' % CRM_BASE_URL
+
+    EXCEPTIONS_MAP = {
+        401: CDMSUnauthorizedException,
+        404: CDMSNotFoundException
+    }
 
     def __init__(self, username, password):
         self.username = username
@@ -126,7 +131,7 @@ class CDMSApi(object):
         if resp.status_code >= 400:
             logger.debug('Got CDMS error (%s): %s' % (resp.status_code, resp.content))
 
-            ExceptionClass = CDMSUnauthorizedException if resp.status_code == 401 else CDMSException
+            ExceptionClass = self.EXCEPTIONS_MAP.get(resp.status_code, CDMSException)
             raise ExceptionClass(
                 resp.content,
                 status_code=resp.status_code
