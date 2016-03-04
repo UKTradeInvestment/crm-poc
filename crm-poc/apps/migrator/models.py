@@ -1,6 +1,28 @@
+from contextlib import ContextDecorator
+
 from django.db import models, transaction
 
 from core.lib_models import TimeStampedModel
+
+
+class override_skip_cdms(ContextDecorator):
+    """
+    Context Manager used to temporarily override the _cdms_skip
+    class attribute with the `overriding_skip_cdms` given.
+    """
+    def __init__(self, obj, overriding_skip_cdms):
+        self.obj = obj
+        self.overriding_skip_cdms = overriding_skip_cdms
+
+    def __enter__(self):
+        self.original_skip_cdms = self.obj._cdms_skip
+        self.obj._cdms_skip = self.overriding_skip_cdms
+        return self
+
+    def __exit__(self, *exc):
+        self.obj._cdms_skip = self.original_skip_cdms
+        del self.original_skip_cdms
+        return False
 
 
 class CDMSModel(TimeStampedModel):
@@ -13,15 +35,9 @@ class CDMSModel(TimeStampedModel):
         self._cdms_skip = False
 
     def save(self, *args, **kwargs):
-        # a bit hacky but it makes things work :-P
-        original_cdms_skip = self._cdms_skip
-        self._cdms_skip = kwargs.pop('skip_cdms', self._cdms_skip)
-        try:
-            ret = super(CDMSModel, self).save(*args, **kwargs)
-        finally:
-            self._cdms_skip = original_cdms_skip
-
-        return ret
+        overriding_skip_cdms = kwargs.pop('skip_cdms', self._cdms_skip)
+        with override_skip_cdms(self, overriding_skip_cdms):
+            return super(CDMSModel, self).save(*args, **kwargs)
 
     def _do_insert(self, manager, using, fields, update_pk, raw):
         if self._cdms_skip:
@@ -47,17 +63,14 @@ class CDMSModel(TimeStampedModel):
         query.get_compiler().execute()
 
     def delete(self, *args, **kwargs):
-        original_cdms_skip = self._cdms_skip
-        self._cdms_skip = kwargs.pop('skip_cdms', self._cdms_skip)
-
-        try:
+        ret = None
+        overriding_skip_cdms = kwargs.pop('skip_cdms', self._cdms_skip)
+        with override_skip_cdms(self, overriding_skip_cdms):
             with transaction.atomic():
                 ret = super(CDMSModel, self).delete(*args, **kwargs)
 
                 if not self._cdms_skip:
                     self._do_delete_cdms_obj()
-        finally:
-            self._cdms_skip = original_cdms_skip
 
         return ret
 
