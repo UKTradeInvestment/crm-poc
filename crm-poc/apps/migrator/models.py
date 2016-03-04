@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 from core.lib_models import TimeStampedModel
 
@@ -15,7 +15,7 @@ class CDMSModel(TimeStampedModel):
     def save(self, *args, **kwargs):
         # a bit hacky but it makes things work :-P
         original_cdms_skip = self._cdms_skip
-        self._cdms_skip = kwargs.pop('skip_cdms', False)
+        self._cdms_skip = kwargs.pop('skip_cdms', self._cdms_skip)
         try:
             ret = super(CDMSModel, self).save(*args, **kwargs)
         finally:
@@ -32,6 +32,34 @@ class CDMSModel(TimeStampedModel):
         if self._cdms_skip:
             base_qs = base_qs.skip_cdms()
         return super(CDMSModel, self)._do_update(base_qs, using, pk_val, values, update_fields, forced_update)
+
+    def _do_delete_cdms_obj(self):
+        """
+        Private method which only deletes the cdms object. Not meant to be used publicly.
+        """
+        from .query import DeleteQuery
+
+        assert self.cdms_pk, \
+            "%s object can't be deleted because its cdms_pk attribute is not set." % self._meta.object_name
+
+        query = DeleteQuery(self.__class__)
+        query.set_cdms_pk(self.cdms_pk)
+        query.get_compiler().execute()
+
+    def delete(self, *args, **kwargs):
+        original_cdms_skip = self._cdms_skip
+        self._cdms_skip = kwargs.pop('skip_cdms', self._cdms_skip)
+
+        try:
+            with transaction.atomic():
+                ret = super(CDMSModel, self).delete(*args, **kwargs)
+
+                if not self._cdms_skip:
+                    self._do_delete_cdms_obj()
+        finally:
+            self._cdms_skip = original_cdms_skip
+
+        return ret
 
     class Meta:
         abstract = True
