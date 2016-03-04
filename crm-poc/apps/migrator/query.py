@@ -153,6 +153,14 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
         return obj
 
 
+class CDMSDeleteCompiler(CDMSGetCompiler):
+    def execute(self):
+        return cdms_conn.delete(
+            self.get_service(),
+            guid=self.query.cdms_pk
+        )
+
+
 class CDMSModelIterable(models.query.ModelIterable):
     def __iter__(self):
 
@@ -412,3 +420,7 @@ class RefreshQuery(GetQuery):
             "you can either call set_local_obj or set_cdms_data but not both"
         self.cdms_pk = self.model.cdms_migrator.get_cdms_pk(cdms_data)
         self.cdms_data = cdms_data
+
+
+class DeleteQuery(GetQuery):
+    compiler = CDMSDeleteCompiler

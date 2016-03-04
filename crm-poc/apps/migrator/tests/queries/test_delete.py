@@ -1,5 +1,3 @@
-from unittest import skip
-
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 
@@ -13,19 +11,10 @@ class BaseDeleteTestCase(BaseMockedCDMSApiTestCase):
 
 
 class DeleteTestCase(BaseDeleteTestCase):
-    @skip('TODO: to be fixed')
-    def test_delete_by_queryset(self):
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        SimpleObj.objects.filter(name='name').delete()
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
-
-        self.assertAPIDeleteCalled(
-            SimpleObj, kwargs={'guid': self.obj.cdms_pk}
-        )
-        self.assertAPINotCalled(['list', 'update', 'get', 'create'])
-
-    @skip('TODO: to be fixed')
-    def test_delete_from_obj(self):
+    def test_from_obj(self):
+        """
+        obj.delete() should delete the local and the cdms obj.
+        """
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         self.obj.delete()
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
@@ -35,40 +24,51 @@ class DeleteTestCase(BaseDeleteTestCase):
         )
         self.assertAPINotCalled(['list', 'update', 'get', 'create'])
 
-    @skip('TODO: to be fixed')
+    def test_with_manager(self):
+        """
+        MyObject.objects.filter(...).delete(...) not currently implemented
+        as it's not possible to rollback changes in cdms in case of deletes
+        involving multiple objects.
+        """
+        self.assertRaises(
+            NotImplementedError,
+            SimpleObj.objects.filter(name__icontains='name').delete
+        )
+        self.assertNoAPICalled()
+
     def test_exception_triggers_rollback(self):
         """
-        In case of exceptions with cdms calls, no changes should be reflected in the db.
+        In case of exceptions with the cdms call, no changes should be reflected in the db.
         """
-        pass
+        self.mocked_cdms_api.delete.side_effect = Exception
+
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
+        self.assertRaises(
+            Exception,
+            self.obj.delete
+        )
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
+
+        self.assertAPINotCalled(['list', 'update', 'get', 'create'])
 
 
 class DeleteSkipCDMSTestCase(BaseDeleteTestCase):
-    def test_delete_by_queryset(self):
+    def test_from_obj(self):
+        """
+        obj.delete(skip_cdms=True) should only delete the obj in local.
+        """
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
+        self.obj.delete(skip_cdms=True)
+        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
+
+        self.assertNoAPICalled()
+
+    def test_with_manager(self):
+        """
+        MyObject.objects.skip_cdms().filter(...).delete(...) should only delete local objs.
+        """
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         SimpleObj.objects.skip_cdms().filter(name='name').delete()
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
 
         self.assertNoAPICalled()
-
-    def test_delete_from_obj(self):
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        self.obj.delete()
-        self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
-
-        self.assertNoAPICalled()
-
-
-class DeleteWithExtraManagerTestCase(BaseDeleteTestCase):
-    @skip('TODO to be decided')
-    def test_delete_by_queryset(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """
-        pass
-
-    @skip('TODO: to be decided')
-    def test_delete_from_obj(self):
-        """
-        The output when using an extra manager at the moment is unexpected and should not be used.
-        """

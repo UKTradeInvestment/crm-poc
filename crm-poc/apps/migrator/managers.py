@@ -272,6 +272,10 @@ class CDMSQuerySet(models.QuerySet):
     def update(self, *args, **kwargs):
         return super(CDMSQuerySet, self).update(*args, **kwargs)
 
+    @only_with_cdms_skip
+    def delete(self, *args, **kwargs):
+        return super(CDMSQuerySet, self).delete(*args, **kwargs)
+
 
 class CDMSManager(models.Manager.from_queryset(CDMSQuerySet)):
     pass
