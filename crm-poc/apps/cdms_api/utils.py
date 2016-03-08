@@ -8,6 +8,9 @@ from django.utils import timezone
 from .base import CDMSApi
 
 
+DATETIME_RE = re.compile('/Date\(([-+]?\d+)\)/')
+
+
 def mocked_cdms_get(modified_on=None, get_data={}):
     def internal(service, guid):
         modified = modified_on or timezone.now()
@@ -38,12 +41,24 @@ def get_mocked_api():
     return api
 
 
-def cdms_datetime_to_datetime(val):
-    # dates from CDMS are in UTC
-    parsed_val = int(re.search('/Date\(([-+]?\d+)\)/', val).group(1))
-    parsed_val = datetime.datetime.fromtimestamp(parsed_val / 1000)
-    return parsed_val.replace(tzinfo=datetime.timezone.utc)
+def cdms_datetime_to_datetime(value):
+    """
+    Parses a cdms datetime as string and returns the equivalent datetime value.
+    Dates in CDMS are always UTC.
+    """
+    match = DATETIME_RE.match(value or '')
+    if match:
+        parsed_val = int(match.group(1))
+        parsed_val = datetime.datetime.fromtimestamp(parsed_val / 1000)
+        return parsed_val.replace(tzinfo=datetime.timezone.utc)
 
 
-def datetime_to_cdms_datetime(val):
-    return '/Date({0})/'.format(int(time.mktime(val.timetuple()) * 1000))
+def datetime_to_cdms_datetime(value):
+    """
+    Returns the cdms string equivalent of the datetime value.
+    """
+    if not value:
+        return value
+    return '/Date({0})/'.format(
+        int(time.mktime(value.timetuple()) * 1000)
+    )
