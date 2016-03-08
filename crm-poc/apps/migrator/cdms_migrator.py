@@ -1,8 +1,8 @@
-from django.db import models
 from django.conf import settings
 
+from cdms_api.utils import cdms_datetime_to_datetime
+
 from .exceptions import NotMappingFieldException, ObjectsNotInSyncException
-from .utils import parse_cdms_date
 
 
 class BaseCDMSMigrator(object):
@@ -13,8 +13,8 @@ class BaseCDMSMigrator(object):
         return cdms_data['{service}Id'.format(service=self.service)]
 
     def has_cdms_obj_changed(self, local_obj, cdms_data):
-        cdms_modified_on = parse_cdms_date(cdms_data['ModifiedOn'])
-        cdms_created_on = parse_cdms_date(cdms_data['CreatedOn'])
+        cdms_modified_on = cdms_datetime_to_datetime(cdms_data['ModifiedOn'])
+        cdms_created_on = cdms_datetime_to_datetime(cdms_data['CreatedOn'])
 
         change_delta = (cdms_modified_on - local_obj.modified).total_seconds()
 
@@ -26,14 +26,14 @@ class BaseCDMSMigrator(object):
         changed = change_delta > settings.CDMS_SYNC_DELTA
         return changed, cdms_modified_on, cdms_created_on
 
-    def get_fields_mapping(self, field_name):
-        mapping = self.fields.get(field_name)
-        if not mapping:
+    def get_cdms_field(self, field_name):
+        cdms_field = self.fields.get(field_name)
+        if not cdms_field:
             raise NotMappingFieldException(
                 'No mapping found for field {field}'.format(field=field_name)
             )
 
-        return (mapping, (lambda x: x), (lambda x: x)) if not isinstance(mapping, tuple) else mapping
+        return cdms_field
 
     def update_cdms_data_from_local(self, local_obj, cdms_data):
         values = [
@@ -44,29 +44,23 @@ class BaseCDMSMigrator(object):
     def update_cdms_data_from_values(self, values, cdms_data):
         for field_name, value in values:
             try:
-                cdms_field, mapping_func, _ = self.get_fields_mapping(field_name)
+                cdms_field = self.get_cdms_field(field_name)
             except NotMappingFieldException:
                 continue
 
-            value = mapping_func(value)
-            cdms_data[cdms_field] = value
+            value = cdms_field.to_cdms_value(value)
+            cdms_data[cdms_field.cdms_name] = value
         return cdms_data
-
-    def parse_cdms_value(self, local_field, cdms_value):
-        if isinstance(local_field, models.CharField) and not cdms_value:
-            return ''
-        return cdms_value
 
     def update_local_from_cdms_data(self, local_obj, cdms_data, cdms_known_related_objects={}):
         for field in local_obj._meta.fields:
             field_name = field.name
             try:
-                cdms_field, _, mapping_func = self.get_fields_mapping(field_name)
+                cdms_field = self.get_cdms_field(field_name)
             except NotMappingFieldException:
                 continue
 
-            raw_value = mapping_func(cdms_data[cdms_field])
-            value = self.parse_cdms_value(field, raw_value)
+            value = cdms_field.from_cdms_value(cdms_data[cdms_field.cdms_name])
             if field_name in cdms_known_related_objects:
                 related_obj = cdms_known_related_objects.get(field_name, {}).get(value.cdms_pk)
 
@@ -84,12 +78,11 @@ class BaseCDMSMigrator(object):
         conflicting_fields = {}
         for field in local_obj._meta.fields:
             field_name = field.name
-            mapping = self.fields.get(field_name)
-            if not mapping:
+            cdms_field = self.fields.get(field_name)
+            if not cdms_field:
                 continue
 
-            cdms_field, _, mapping_func = (mapping, None, (lambda x: x)) if not isinstance(mapping, tuple) else mapping
-            cdms_value = mapping_func(cdms_data[cdms_field])
+            cdms_value = cdms_field.from_cdms_value(cdms_data[cdms_field])
             local_value = getattr(local_obj, field_name)
 
             if cdms_value != local_value:

@@ -10,7 +10,7 @@ from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 from migrator.exceptions import ObjectsNotInSyncException
 
-from cdms_api.utils import mocked_cdms_get
+from cdms_api.tests.utils import mocked_cdms_get
 
 
 class BaseGetTestCase(BaseMockedCDMSApiTestCase):
@@ -191,13 +191,15 @@ class SyncGetTestCase(BaseGetTestCase):
             modified_on=modified_on,
             get_data={
                 'Name': 'new name',
-                'DateTimeField': None,
-                'IntField': None
+                'DateTimeField': '/Date(1451606400000)/',
+                'IntField': 10
             }
         )
 
         obj = SimpleObj.objects.get(pk=self.obj.pk)
         self.assertEqual(obj.name, 'new name')
+        self.assertEqual(obj.dt_field, datetime.datetime(2016, 1, 1).replace(tzinfo=datetime.timezone.utc))
+        self.assertEqual(obj.int_field, 10)
         self.assertEqual(obj.modified, modified_on)
         self.assertEqual(obj.created, self.obj.created)
 

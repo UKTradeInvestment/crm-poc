@@ -4,7 +4,7 @@ from django.utils import timezone
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 
-from cdms_api.utils import mocked_cdms_get
+from cdms_api.tests.utils import mocked_cdms_get
 
 
 class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):

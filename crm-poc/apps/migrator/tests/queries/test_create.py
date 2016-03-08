@@ -1,3 +1,5 @@
+import datetime
+
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 
@@ -9,6 +11,8 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         """
         obj = SimpleObj()
         obj.name = 'simple obj'
+        obj.dt_field = datetime.datetime(2016, 1, 1).replace(tzinfo=datetime.timezone.utc)
+        obj.int_field = 10
 
         self.assertEqual(obj.cdms_pk, '')
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
@@ -17,7 +21,13 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         self.assertNotEqual(obj.cdms_pk, '')
 
         self.assertAPICreateCalled(
-            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}}
+            SimpleObj, kwargs={
+                'data': {
+                    'Name': 'simple obj',
+                    'DateTimeField': '/Date(1451606400000)/',
+                    'IntField': 10
+                }
+            }
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 

@@ -3,6 +3,8 @@ from migrator.models import CDMSModel
 from migrator.managers import CDMSManager
 from migrator.cdms_migrator import BaseCDMSMigrator
 
+from cdms_api import fields as cdms_fields
+
 
 class MigratorManager(CDMSManager):
     use_for_related_fields = True
@@ -10,9 +12,9 @@ class MigratorManager(CDMSManager):
 
 class SimpleMigrator(BaseCDMSMigrator):
     fields = {
-        'name': 'Name',
-        'dt_field': 'DateTimeField',
-        'int_field': 'IntField',
+        'name': cdms_fields.StringField('Name'),
+        'dt_field': cdms_fields.DateTimeField('DateTimeField'),
+        'int_field': cdms_fields.IntegerField('IntField'),
     }
     service = 'Simple'
 

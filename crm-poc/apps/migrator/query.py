@@ -328,10 +328,12 @@ class CDMSQuery(object):
         )
 
         field_name = field.name
-        cdms_field_name, _, _ = self.model.cdms_migrator.get_fields_mapping(field_name)
+        cdms_field = self.model.cdms_migrator.get_cdms_field(field_name)
 
         if field.is_relation:
-            cdms_field_name = '{field}/Id'.format(field=cdms_field_name)
+            cdms_field_name = '{field}/Id'.format(field=cdms_field.cdms_name)
+        else:
+            cdms_field_name = cdms_field.cdms_name
 
         return cdms_field_name, lookups[0], value
 

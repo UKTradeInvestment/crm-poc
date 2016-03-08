@@ -2,7 +2,7 @@ from unittest import mock
 
 from django.test.testcases import TransactionTestCase
 
-from cdms_api.utils import mocked_cdms_create, mocked_cdms_get
+from cdms_api.tests.utils import mocked_cdms_get, mocked_cdms_create
 
 
 class BaseMockedCDMSApiTestCase(TransactionTestCase):
