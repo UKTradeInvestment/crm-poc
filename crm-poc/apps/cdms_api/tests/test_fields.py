@@ -2,7 +2,7 @@ import datetime
 
 from django.test.testcases import TestCase
 
-from cdms_api.fields import StringField, IntegerField, DateTimeField
+from cdms_api.fields import StringField, IntegerField, DateTimeField, BooleanField
 
 
 class StringFieldTestCase(TestCase):
@@ -56,6 +56,36 @@ class IntegerFieldTestCase(TestCase):
         self.assertEqual(
             self.field.to_cdms_value(10),
             10
+        )
+
+    def test_to_cdms_value_None(self):
+        self.assertEqual(
+            self.field.to_cdms_value(None),
+            None
+        )
+
+
+class BooleanFieldTestCase(TestCase):
+    def setUp(self):
+        super(BooleanFieldTestCase, self).setUp()
+        self.field = BooleanField('name')
+
+    def test_from_cdms_value(self):
+        self.assertEqual(
+            self.field.from_cdms_value(False),
+            False
+        )
+
+    def test_from_cdms_value_None(self):
+        self.assertEqual(
+            self.field.from_cdms_value(None),
+            None
+        )
+
+    def test_to_cdms_value(self):
+        self.assertEqual(
+            self.field.to_cdms_value(False),
+            False
         )
 
     def test_to_cdms_value_None(self):

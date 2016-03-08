@@ -20,6 +20,10 @@ class StringField(BaseField):
     pass
 
 
+class BooleanField(BaseField):
+    pass
+
+
 class DateTimeField(BaseField):
     def to_cdms_value(self, value):
         if not value:
