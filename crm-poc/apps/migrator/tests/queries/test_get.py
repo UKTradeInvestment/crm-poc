@@ -10,7 +10,7 @@ from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 from migrator.exceptions import ObjectsNotInSyncException
 
-from cdms_api.utils import mocked_cdms_get
+from cdms_api.tests.utils import mocked_cdms_get
 
 
 class BaseGetTestCase(BaseMockedCDMSApiTestCase):
