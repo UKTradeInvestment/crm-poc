@@ -1,9 +1,11 @@
-import datetime
 import sys
+import warnings
+import datetime
 from numbers import Number
 
+
 from django.db import transaction, models
-from django.db.models.sql.query import get_field_names_from_opts
+from django.db.models.sql.query import get_field_names_from_opts, get_order_dir
 from django.db.models.constants import LOOKUP_SEP
 from django.utils.tree import Node
 from django.utils import timezone
@@ -12,6 +14,7 @@ from django.core.exceptions import FieldDoesNotExist, FieldError
 from cdms_api import api as cdms_conn
 
 from .models import CDMSModel
+from .exceptions import NotMappingFieldException
 
 
 class CDMSCompiler(object):
@@ -63,10 +66,7 @@ class CDMSSelectCompiler(CDMSCompiler):
             return "guid'{value}'".format(value=value.cdms_pk)
         return "'{value}'".format(value=value)
 
-    def execute(self):
-        if self.query.empty:
-            return []
-
+    def get_filters(self):
         cdms_filters = []
         for field, expr, value in self.query.filters:
             cdms_expr = self.EXPRS.get(expr)
@@ -76,8 +76,46 @@ class CDMSSelectCompiler(CDMSCompiler):
             cdms_filters.append(
                 cdms_expr.format(field=field, value=self.convert_value(value))
             )
+        return cdms_filters
 
-        return cdms_conn.list(self.get_service(), filters=cdms_filters)
+    def get_order_by(self):
+        cdms_orderby = []
+
+        if self.query.order_by:
+            ordering = self.query.order_by
+        else:
+            ordering = self.query.model._meta.ordering
+            if not ordering:
+                warnings.warn(
+                    "{0} does not have a default ordering so cdms calls and local ones "
+                    "are not similarly ordered. We strongly recommend you should add "
+                    "a Meta class with ordering = ['modified'] or similar.".format(self.query.model.__name__)
+                )
+                ordering = ['modified']
+
+        for field in ordering:
+            col, order = get_order_dir(field, 'ASC')
+            try:
+                cdms_field = self.get_migrator().get_cdms_field(col)
+            except NotMappingFieldException:
+                raise NotImplementedError(
+                    'Cannot order by {0}, only ordering by direct fields currently implemented'.format(col)
+                )
+
+            cdms_orderby.append(
+                '{0} {1}'.format(cdms_field.cdms_name, order.lower())
+            )
+        return cdms_orderby
+
+    def execute(self):
+        if self.query.empty:
+            return []
+
+        return cdms_conn.list(
+            self.get_service(),
+            filters=self.get_filters(),
+            order_by=self.get_order_by()
+        )
 
 
 class CDMSInsertCompiler(CDMSCompiler):
@@ -199,6 +237,7 @@ class CDMSQuery(object):
         self.filters = []
         self.empty = False
         self.cdms_known_related_objects = {}
+        self.order_by = []
 
     def set_cdms_known_related_objects(self, cdms_known_related_objects):
         self.cdms_known_related_objects = cdms_known_related_objects
@@ -366,6 +405,12 @@ class CDMSQuery(object):
             raise NotImplementedError('Can only use raw values, anything else has not been implemented yet')
 
         return value, lookups
+
+    def add_ordering(self, *ordering):
+        self.order_by.extend(ordering)
+
+    def clear_ordering(self):
+        self.order_by = []
 
     def get_compiler(self):
         return self.compiler(query=self)

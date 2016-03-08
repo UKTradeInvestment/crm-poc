@@ -1,4 +1,5 @@
 from cdms_api.utils import cdms_datetime_to_datetime
+from cdms_api import fields as cdms_fields
 
 from .exceptions import NotMappingFieldException, ObjectsNotInSyncException
 
@@ -6,6 +7,16 @@ from .exceptions import NotMappingFieldException, ObjectsNotInSyncException
 class BaseCDMSMigrator(object):
     fields = {}
     service = None
+
+    def __init__(self):
+        self.all_fields = self.build_filters()
+
+    def build_filters(self):
+        all_fields = {
+            'modified': cdms_fields.DateTimeField('ModifiedOn')
+        }
+        all_fields.update(self.fields)
+        return all_fields
 
     def get_cdms_pk(self, cdms_data):
         return cdms_data['{service}Id'.format(service=self.service)]
@@ -33,7 +44,7 @@ class BaseCDMSMigrator(object):
         return change_delta, cdms_modified_on, cdms_created_on
 
     def get_cdms_field(self, field_name):
-        cdms_field = self.fields.get(field_name)
+        cdms_field = self.all_fields.get(field_name)
         if not cdms_field:
             raise NotMappingFieldException(
                 'No mapping found for field {field}'.format(field=field_name)

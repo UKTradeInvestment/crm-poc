@@ -85,6 +85,15 @@ class CDMSQuerySet(models.QuerySet):
         obj.save(force_insert=True, using=self.db, skip_cdms=self.cdms_skip)
         return obj
 
+    def order_by(self, *field_names):
+        ret = super(CDMSQuerySet, self).order_by(*field_names)
+
+        if not self.cdms_skip:
+            ret.cdms_query.clear_ordering()
+            ret.cdms_query.add_ordering(*field_names)
+
+        return ret
+
     def _filter_or_exclude(self, negate, *args, **kwargs):
         if not self.cdms_skip:
             if args or kwargs:

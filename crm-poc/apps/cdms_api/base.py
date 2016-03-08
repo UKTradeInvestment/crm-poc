@@ -142,7 +142,7 @@ class CDMSApi(object):
 
         return resp
 
-    def list(self, service, top=50, skip=0, select=None, filters=None, orderby=None):
+    def list(self, service, top=50, skip=0, select=None, filters=None, order_by=None):
         params = {}
         if filters:
             params['$filter'] = ' and '.join(filters)
@@ -150,8 +150,10 @@ class CDMSApi(object):
         if select:
             params['$select'] = ','.join(select)
 
-        if orderby:
-            params['$orderby'] = orderby
+        if order_by:
+            if isinstance(order_by, str):
+                order_by = [order_by]
+            params['$orderby'] = ','.join(order_by)
 
         url = "{base_url}/{service}Set?$top={top}&$skip={skip}&{params}".format(
             base_url=self.CRM_REST_BASE_URL,
