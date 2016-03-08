@@ -17,8 +17,7 @@ class IntegerField(BaseField):
 
 
 class StringField(BaseField):
-    def to_cdms_value(self, value):
-        return value or ''
+    pass
 
 
 class DateTimeField(BaseField):
