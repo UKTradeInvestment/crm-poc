@@ -1,4 +1,6 @@
+import re
 import time
+import datetime
 from unittest import mock
 
 from django.utils import timezone
@@ -10,12 +12,8 @@ def mocked_cdms_get(modified_on=None, get_data={}):
     def internal(service, guid):
         modified = modified_on or timezone.now()
         defaults = {
-            'ModifiedOn': '/Date({dt})/'.format(
-                dt=int(time.mktime(modified.timetuple()) * 1000)
-            ),
-            'CreatedOn': '/Date({dt})/'.format(
-                dt=int(time.mktime(modified.timetuple()) * 1000)
-            )
+            'CreatedOn': datetime_to_cdms_datetime(modified),
+            'ModifiedOn': datetime_to_cdms_datetime(modified),
         }
         defaults.update(get_data)
         return defaults
@@ -38,3 +36,14 @@ def get_mocked_api():
     api.create.side_effect = mocked_cdms_create()
     api.get.side_effect = mocked_cdms_get
     return api
+
+
+def cdms_datetime_to_datetime(val):
+    # dates from CDMS are in UTC
+    parsed_val = int(re.search('/Date\(([-+]?\d+)\)/', val).group(1))
+    parsed_val = datetime.datetime.fromtimestamp(parsed_val / 1000)
+    return parsed_val.replace(tzinfo=datetime.timezone.utc)
+
+
+def datetime_to_cdms_datetime(val):
+    return '/Date({0})/'.format(int(time.mktime(val.timetuple()) * 1000))
