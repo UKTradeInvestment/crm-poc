@@ -16,10 +16,24 @@ class StringFieldTestCase(TestCase):
             'a string'
         )
 
-    def test_from_cdms_value_None(self):
+    def test_from_cdms_value_None_with_nullable_field(self):
+        """
+        When null=True, None values are returned untouched.
+        """
+        field = StringField('name', null=True)
         self.assertEqual(
-            self.field.from_cdms_value(None),
+            field.from_cdms_value(None),
             None
+        )
+
+    def test_from_cdms_value_None_without_nullable_field(self):
+        """
+        When null=False, None values are returned as empty strings.
+        """
+        field = StringField('name', null=False)
+        self.assertEqual(
+            field.from_cdms_value(None),
+            ''
         )
 
     def test_to_cdms_value(self):

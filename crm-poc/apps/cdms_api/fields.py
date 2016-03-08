@@ -17,7 +17,14 @@ class IntegerField(BaseField):
 
 
 class StringField(BaseField):
-    pass
+    def __init__(self, cdms_name, null=False):
+        super(StringField, self).__init__(cdms_name)
+        self.null = null
+
+    def from_cdms_value(self, value):
+        if not self.null and not value:
+            return ''
+        return value
 
 
 class BooleanField(BaseField):
