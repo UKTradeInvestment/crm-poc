@@ -18,12 +18,27 @@ def mocked_cdms_get(modified_on=None, get_data={}):
     return internal
 
 
-def mocked_cdms_create(create_data={}):
+def mocked_cdms_create(modified_on=None, cdms_id='new cdms pk', create_data={}):
     def internal(service, data):
+        modified = modified_on or timezone.now()
         defaults = {
-            '{service}Id'.format(service=service): 'new cdms pk'
+            '{service}Id'.format(service=service): cdms_id,
+            'CreatedOn': datetime_to_cdms_datetime(modified),
+            'ModifiedOn': datetime_to_cdms_datetime(modified),
         }
         defaults.update(create_data)
+        return defaults
+    return internal
+
+
+def mocked_cdms_update(modified_on=None, update_data={}):
+    def internal(service, guid, data):
+        modified = modified_on or timezone.now()
+        defaults = {
+            'CreatedOn': datetime_to_cdms_datetime(modified),
+            'ModifiedOn': datetime_to_cdms_datetime(modified),
+        }
+        defaults.update(update_data)
         return defaults
     return internal
 
@@ -32,5 +47,6 @@ def get_mocked_api():
     api = mock.MagicMock(spec=CDMSApi)
 
     api.create.side_effect = mocked_cdms_create()
-    api.get.side_effect = mocked_cdms_get
+    api.get.side_effect = mocked_cdms_get()
+    api.update.side_effect = mocked_cdms_update()
     return api

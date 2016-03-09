@@ -1,10 +1,12 @@
+import datetime
+
 from django.db import transaction
 from django.utils import timezone
 
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 
-from cdms_api.tests.utils import mocked_cdms_get
+from cdms_api.tests.utils import mocked_cdms_get, mocked_cdms_update
 
 
 class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
@@ -14,10 +16,20 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             - get the related cdms obj
             - update the cdms obj
             - save local obj
+
+
+        This also checks that after the operation, the local_obj.modified has the same value as the cdms modified
+        one, NOT the automatic django value. This is important for the syncronisation.
         """
         # mock get call
-        modified_on = timezone.now()
-        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(modified_on=modified_on)
+        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
+            modified_on=timezone.now() + datetime.timedelta(hours=1)
+        )
+
+        modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
+        self.mocked_cdms_api.update.side_effect = mocked_cdms_update(
+            modified_on=modified_on
+        )
 
         # create without cdms and then save
         obj = SimpleObj.objects.skip_cdms().create(
@@ -30,6 +42,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         obj.name = 'simple obj'
         obj.save()
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
+        self.assertEqual(obj.modified, modified_on)
 
         # check cdms get called
         self.assertAPIGetCalled(
@@ -37,16 +50,19 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         )
 
         # check cdms update called
-        expected_data = mocked_cdms_get(modified_on=modified_on)(None, None)
-        expected_data.update({'Name': 'simple obj', 'DateTimeField': None, 'IntField': None})
         self.assertAPIUpdateCalled(
             SimpleObj,
             kwargs={
                 'guid': 'cdms-pk',
-                'data': expected_data
+                'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}
             }
         )
         self.assertAPINotCalled(['list', 'create', 'delete'])
+
+        # reload obj and check, 'modified' should be == cdms modified
+        obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
+        self.assertEqual(obj.name, 'simple obj')
+        self.assertEqual(obj.modified, modified_on)
 
     def test_exception_triggers_rollback(self):
         """
@@ -60,6 +76,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             cdms_pk='cdms-pk',
             name='old name'
         )
+        old_modified = obj.modified
 
         # save
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
@@ -76,6 +93,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         # check that the obj in the db didn't change
         obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
         self.assertEqual(obj.name, 'old name')
+        self.assertEqual(obj.modified, old_modified)
 
     def test_save_with_skip_cdms(self):
         """

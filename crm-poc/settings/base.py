@@ -116,7 +116,6 @@ TEMPLATES = [
 ]
 
 # CDMS SETTINGS
-CDMS_SYNC_DELTA = 2  # num of seconds after which the objects are considered out-of-sync
 CDMS_ADFS_URL = ''
 CDMS_BASE_URL = ''
 CDMS_USERNAME = ''

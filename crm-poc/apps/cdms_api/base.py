@@ -172,21 +172,16 @@ class CDMSApi(object):
         )
         return self.make_request('get', url)
 
-    def _cleanup_data_before_changes(self, cdms_data):
-        del cdms_data['optevia_LastVerified']
-        del cdms_data['ModifiedOn']
-        del cdms_data['CreatedOn']
-
-        return cdms_data
-
     def update(self, service, guid, data):
         url = "{base_url}/{service}Set(guid'{guid}')".format(
             base_url=self.CRM_REST_BASE_URL,
             service=service,
             guid=guid
         )
-        data = self._cleanup_data_before_changes(data)
-        return self.make_request('put', url, data=data)
+
+        # PUT returns 204 so we need to make an extra GET query to return the latest values
+        self.make_request('put', url, data=data)
+        return self.get(service, guid)
 
     def create(self, service, data):
         url = "{base_url}/{service}Set".format(

@@ -1,7 +1,6 @@
 import datetime
 
 from django.utils import timezone
-from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 
 from cdms_api.exceptions import CDMSNotFoundException
@@ -66,8 +65,9 @@ class GetByCmdPKTestCase(BaseGetTestCase):
         MyObject.objects.get(cdms_pk=..) when local obj does not exist,
         should hit the cdms api, create a local obj and return it.
         """
+        modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
-            modified_on=timezone.now(),
+            modified_on=modified_on,
             get_data={
                 'Name': 'new name',
                 'DateTimeField': None,
@@ -82,11 +82,18 @@ class GetByCmdPKTestCase(BaseGetTestCase):
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
         self.assertEqual(obj.cdms_pk, 'cdms-pk')
         self.assertEqual(obj.name, 'new name')
+        self.assertEqual(obj.modified, modified_on)
 
         self.assertAPIGetCalled(
             SimpleObj, kwargs={'guid': 'cdms-pk'}
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
+
+        # reload obj and check
+        obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
+        self.assertEqual(obj.cdms_pk, 'cdms-pk')
+        self.assertEqual(obj.name, 'new name')
+        self.assertEqual(obj.modified, modified_on)
 
     def test_neither_local_nor_cdms_obj_exists(self):
         """
@@ -144,10 +151,9 @@ class SyncGetTestCase(BaseGetTestCase):
             - get cdms_obj from cdms
             - no local changes happen
         """
-        modified_on = self.obj.modified + datetime.timedelta(
-            seconds=settings.CDMS_SYNC_DELTA
+        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
+            modified_on=self.obj.modified
         )
-        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(modified_on=modified_on)
 
         obj = SimpleObj.objects.get(pk=self.obj.pk)
         self.assertEqual(obj.modified, self.obj.modified)
@@ -163,9 +169,7 @@ class SyncGetTestCase(BaseGetTestCase):
         If the local obj is more up to date, it means that the last syncronisation didn't
         work as it should have, so we raise ObjectsNotInSyncException.
         """
-        modified_on = self.obj.modified - datetime.timedelta(
-            seconds=settings.CDMS_SYNC_DELTA + 0.001
-        )
+        modified_on = self.obj.modified - datetime.timedelta(seconds=0.001)
 
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(modified_on=modified_on)
 
@@ -186,7 +190,7 @@ class SyncGetTestCase(BaseGetTestCase):
             - get cdms_obj from cdms
             - update obj from cdms_obj
         """
-        modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
+        modified_on = self.obj.modified + datetime.timedelta(seconds=1)
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
             modified_on=modified_on,
             get_data={
@@ -208,6 +212,12 @@ class SyncGetTestCase(BaseGetTestCase):
         )
 
         self.assertAPINotCalled(['list', 'update', 'delete', 'create'])
+
+        # reload obj and check
+        obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
+        self.assertEqual(obj.cdms_pk, 'cdms-pk')
+        self.assertEqual(obj.name, 'new name')
+        self.assertEqual(obj.modified, modified_on)
 
     def test_cdms_exception_triggers_exception(self):
         """

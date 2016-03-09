@@ -146,15 +146,29 @@ class CDMSQuerySet(models.QuerySet):
             obj = objs[0]
             query = InsertQuery(self.model)
             query.insert_value(obj)
-            cdms_pk = query.get_compiler().execute()
+            cdms_pk, modified_on = query.get_compiler().execute()
 
             # update cdms_pk local
             obj.cdms_pk = cdms_pk
-            self._clone().skip_cdms().filter(pk=return_val).update(cdms_pk=cdms_pk)
+            obj.modified = modified_on
+            self._clone().skip_cdms().filter(pk=return_val).update(
+                cdms_pk=cdms_pk, modified=modified_on
+            )
 
         return return_val
 
     def _update(self, values):
+        raise NotImplementedError()
+
+    def _update_with_modified(self, values):
+        """
+        The same as _update but returns the modified_on date from cdms as well if the update
+        happened. I preferred not to override _update as I'm changing the return values from int to tuple (int, dt).
+
+        This is not ideal but we need to update the model based on the new modified_on value and Django really
+        doesn't help you in this case.
+        """
+        modified_on = None
         return_val = super(CDMSQuerySet, self)._update(values)
 
         if not self.cdms_skip:
@@ -172,9 +186,13 @@ class CDMSQuerySet(models.QuerySet):
 
             query = UpdateQuery(self.model)
             query.add_update_fields(cdms_pk, model_values)
-            query.get_compiler().execute()
+            modified_on = query.get_compiler().execute()
 
-        return return_val
+            super(CDMSQuerySet, self)._update([
+                (self.model._meta.get_field('modified'), None, modified_on)
+            ])
+
+        return return_val, modified_on
 
     @only_with_cdms_skip
     def annotate(self, *args, **kwargs):
