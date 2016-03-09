@@ -67,8 +67,8 @@ class GetByCmdPKTestCase(BaseGetTestCase):
         """
         modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
-            modified_on=modified_on,
             get_data={
+                'ModifiedOn': modified_on,
                 'Name': 'new name',
                 'DateTimeField': None,
                 'IntField': None
@@ -152,7 +152,9 @@ class SyncGetTestCase(BaseGetTestCase):
             - no local changes happen
         """
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
-            modified_on=self.obj.modified
+            get_data={
+                'ModifiedOn': self.obj.modified
+            }
         )
 
         obj = SimpleObj.objects.get(pk=self.obj.pk)
@@ -171,7 +173,11 @@ class SyncGetTestCase(BaseGetTestCase):
         """
         modified_on = self.obj.modified - datetime.timedelta(seconds=0.001)
 
-        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(modified_on=modified_on)
+        self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
+            get_data={
+                'ModifiedOn': modified_on
+            }
+        )
 
         self.assertRaises(
             ObjectsNotInSyncException, SimpleObj.objects.get, pk=self.obj.pk
@@ -192,8 +198,8 @@ class SyncGetTestCase(BaseGetTestCase):
         """
         modified_on = self.obj.modified + datetime.timedelta(seconds=1)
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
-            modified_on=modified_on,
             get_data={
+                'ModifiedOn': modified_on,
                 'Name': 'new name',
                 'DateTimeField': '/Date(1451606400000)/',
                 'IntField': 10

@@ -23,12 +23,16 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         """
         # mock get call
         self.mocked_cdms_api.get.side_effect = mocked_cdms_get(
-            modified_on=timezone.now() + datetime.timedelta(hours=1)
+            get_data={
+                'ModifiedOn': timezone.now() + datetime.timedelta(hours=1)
+            }
         )
 
         modified_on = (timezone.now() + datetime.timedelta(days=1)).replace(microsecond=0)
         self.mocked_cdms_api.update.side_effect = mocked_cdms_update(
-            modified_on=modified_on
+            update_data={
+                'ModifiedOn': modified_on
+            }
         )
 
         # create without cdms and then save
@@ -54,7 +58,7 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             SimpleObj,
             kwargs={
                 'guid': 'cdms-pk',
-                'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}
+                'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None, 'SimpleId': 'cdms-pk'}
             }
         )
         self.assertAPINotCalled(['list', 'create', 'delete'])
