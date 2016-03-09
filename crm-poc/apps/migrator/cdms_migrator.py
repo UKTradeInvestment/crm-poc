@@ -1,5 +1,3 @@
-from django.conf import settings
-
 from cdms_api.utils import cdms_datetime_to_datetime
 
 from .exceptions import NotMappingFieldException, ObjectsNotInSyncException
@@ -12,19 +10,27 @@ class BaseCDMSMigrator(object):
     def get_cdms_pk(self, cdms_data):
         return cdms_data['{service}Id'.format(service=self.service)]
 
+    def get_modified_on(self, cdms_data):
+        return cdms_datetime_to_datetime(cdms_data['ModifiedOn'])
+
+    def clean_up_cdms_data_before_changes(self, data):
+        data.pop('optevia_LastVerified', None)
+        data.pop('ModifiedOn', None)
+        data.pop('CreatedOn', None)
+        return data
+
     def has_cdms_obj_changed(self, local_obj, cdms_data):
-        cdms_modified_on = cdms_datetime_to_datetime(cdms_data['ModifiedOn'])
+        cdms_modified_on = self.get_modified_on(cdms_data)
         cdms_created_on = cdms_datetime_to_datetime(cdms_data['CreatedOn'])
 
         change_delta = (cdms_modified_on - local_obj.modified).total_seconds()
 
-        if change_delta < (settings.CDMS_SYNC_DELTA * -1):
+        if change_delta < 0:
             raise ObjectsNotInSyncException(
                 'Django Model changed without being syncronised to CDMS, this should not happen'
             )
 
-        changed = change_delta > settings.CDMS_SYNC_DELTA
-        return changed, cdms_modified_on, cdms_created_on
+        return change_delta, cdms_modified_on, cdms_created_on
 
     def get_cdms_field(self, field_name):
         cdms_field = self.fields.get(field_name)
@@ -78,11 +84,12 @@ class BaseCDMSMigrator(object):
         conflicting_fields = {}
         for field in local_obj._meta.fields:
             field_name = field.name
-            cdms_field = self.fields.get(field_name)
-            if not cdms_field:
+            try:
+                cdms_field = self.get_cdms_field(field_name)
+            except NotMappingFieldException:
                 continue
 
-            cdms_value = cdms_field.from_cdms_value(cdms_data[cdms_field])
+            cdms_value = cdms_field.from_cdms_value(cdms_data[cdms_field.cdms_name])
             local_value = getattr(local_obj, field_name)
 
             if cdms_value != local_value:

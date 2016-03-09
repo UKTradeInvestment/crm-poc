@@ -1,5 +1,9 @@
 import datetime
 
+from django.utils import timezone
+
+from cdms_api.tests.utils import mocked_cdms_create
+
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 
@@ -9,6 +13,13 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         """
         obj.save() should create a new obj in local and cdms if it doesn't exist.
         """
+        modified_on = (timezone.now() - datetime.timedelta(days=1)).replace(microsecond=0)
+        cdms_id = 'brand new id'
+        self.mocked_cdms_api.create.side_effect = mocked_cdms_create(
+            cdms_id=cdms_id,
+            modified_on=modified_on
+        )
+
         obj = SimpleObj()
         obj.name = 'simple obj'
         obj.dt_field = datetime.datetime(2016, 1, 1).replace(tzinfo=datetime.timezone.utc)
@@ -18,7 +29,8 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
         obj.save()
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        self.assertNotEqual(obj.cdms_pk, '')
+        self.assertEqual(obj.cdms_pk, cdms_id)
+        self.assertEqual(obj.modified, modified_on)
 
         self.assertAPICreateCalled(
             SimpleObj, kwargs={
@@ -30,6 +42,11 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             }
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
+
+        # reload obj and check cdms_pk and modified
+        obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
+        self.assertEqual(obj.cdms_pk, cdms_id)
+        self.assertEqual(obj.modified, modified_on)
 
     def test_exception_triggers_rollback(self):
         """
@@ -52,15 +69,29 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         """
         MyObject.objects.create() should create a new obj in local and cdms.
         """
+        modified_on = (timezone.now() - datetime.timedelta(days=1)).replace(microsecond=0)
+        cdms_id = 'brand new id'
+
+        self.mocked_cdms_api.create.side_effect = mocked_cdms_create(
+            cdms_id=cdms_id,
+            modified_on=modified_on
+        )
+
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
         obj = SimpleObj.objects.create(name='simple obj')
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 1)
-        self.assertNotEqual(obj.cdms_pk, '')
+        self.assertEqual(obj.cdms_pk, cdms_id)
+        self.assertEqual(obj.modified, modified_on)
 
         self.assertAPICreateCalled(
             SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}}
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
+
+        # reload obj and check cdms_pk and modified
+        obj = SimpleObj.objects.skip_cdms().get(pk=obj.pk)
+        self.assertEqual(obj.cdms_pk, cdms_id)
+        self.assertEqual(obj.modified, modified_on)
 
     def test_exception_triggers_rollback(self):
         """

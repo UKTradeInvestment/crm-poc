@@ -19,7 +19,10 @@ class CDMSCompiler(object):
         self.query = query
 
     def get_service(self):
-        return self.query.model.cdms_migrator.service
+        return self.get_migrator().service
+
+    def get_migrator(self):
+        return self.query.model.cdms_migrator
 
     def execute(self):
         raise NotImplementedError()
@@ -79,10 +82,14 @@ class CDMSSelectCompiler(CDMSCompiler):
 
 class CDMSInsertCompiler(CDMSCompiler):
     def execute(self):
+        data = self.get_migrator().clean_up_cdms_data_before_changes(self.query.cdms_data)
         results = cdms_conn.create(
-            self.get_service(), data=self.query.cdms_data
+            self.get_service(), data=data
         )
-        return self.query.model.cdms_migrator.get_cdms_pk(results)
+        return (
+            self.get_migrator().get_cdms_pk(results),
+            self.get_migrator().get_modified_on(results)
+        )
 
 
 class CDMSGetCompiler(CDMSCompiler):
@@ -95,11 +102,13 @@ class CDMSGetCompiler(CDMSCompiler):
 
 class CDMSUpdateCompiler(CDMSCompiler):
     def execute(self):
-        return cdms_conn.update(
+        data = self.get_migrator().clean_up_cdms_data_before_changes(self.query.cdms_data)
+        results = cdms_conn.update(
             self.get_service(),
             guid=self.query.cdms_pk,
-            data=self.query.cdms_data
+            data=data
         )
+        return self.get_migrator().get_modified_on(results)
 
 
 class CDMSRefreshCompiler(CDMSGetCompiler):
@@ -123,7 +132,7 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
         return (obj, True)
 
     def execute(self):
-        migrator = self.query.model.cdms_migrator
+        migrator = self.get_migrator()
         manager = self.query.model.objects
         cdms_data = self.get_cdms_data()
         obj, new_obj = self.get_local_obj()
