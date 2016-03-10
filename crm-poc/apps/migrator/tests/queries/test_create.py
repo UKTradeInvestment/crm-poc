@@ -16,8 +16,10 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
         modified_on = (timezone.now() - datetime.timedelta(days=1)).replace(microsecond=0)
         cdms_id = 'brand new id'
         self.mocked_cdms_api.create.side_effect = mocked_cdms_create(
-            cdms_id=cdms_id,
-            modified_on=modified_on
+            create_data={
+                'SimpleId': cdms_id,
+                'ModifiedOn': modified_on
+            }
         )
 
         obj = SimpleObj()
@@ -73,8 +75,10 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         cdms_id = 'brand new id'
 
         self.mocked_cdms_api.create.side_effect = mocked_cdms_create(
-            cdms_id=cdms_id,
-            modified_on=modified_on
+            create_data={
+                'SimpleId': cdms_id,
+                'ModifiedOn': modified_on
+            }
         )
 
         self.assertEqual(SimpleObj.objects.skip_cdms().count(), 0)
