@@ -239,7 +239,7 @@ class SyncGetTestCase(BaseGetTestCase):
 class GetSkipCDMSTestCase(BaseGetTestCase):
     def test_get_by_any_fields(self):
         """
-        Clazz.objects.skip_cdms().get(...) should not hit cdms.
+        Klass.objects.skip_cdms().get(...) should not hit cdms.
         """
         SimpleObj.objects.skip_cdms().get(pk=self.obj.pk)
         self.assertNoAPICalled()
@@ -249,7 +249,7 @@ class GetSkipCDMSTestCase(BaseGetTestCase):
 
     def test_object_not_found(self):
         """
-        Clazz.objects.skip_cdms().get(...) should raise DoesNotExist and not hit cdms.
+        Klass.objects.skip_cdms().get(...) should raise DoesNotExist and not hit cdms.
         """
         self.assertRaises(
             SimpleObj.DoesNotExist,

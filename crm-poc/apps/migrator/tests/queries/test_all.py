@@ -11,7 +11,7 @@ from cdms_api.tests.utils import mocked_cdms_list
 class AllTestCase(BaseMockedCDMSApiTestCase):
     def test_all_with_some_local_objs(self):
         """
-        Clazz.objects.all() will:
+        Klass.objects.all() will:
             - hit cdms to get the objs
             - create or update local objs if necessary
             - return local objs
@@ -103,7 +103,7 @@ class AllTestCase(BaseMockedCDMSApiTestCase):
 
     def test_all_skip_cdms(self):
         """
-        Clazz.objects.skip_cdms().all() should not hit cdms.
+        Klass.objects.skip_cdms().all() should not hit cdms.
         """
         list(SimpleObj.objects.skip_cdms().all())
         self.assertNoAPICalled()
