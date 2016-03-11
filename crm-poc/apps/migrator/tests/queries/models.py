@@ -34,3 +34,6 @@ class SimpleObj(CDMSModel):
     objects = MigratorManager()
     django_objects = models.Manager()
     cdms_migrator = SimpleMigrator()
+
+    class Meta:
+        ordering = ['modified']

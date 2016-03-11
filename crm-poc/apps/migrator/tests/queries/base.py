@@ -57,6 +57,9 @@ class BaseMockedCDMSApiTestCase(TransactionTestCase):
         self.assertAPICalled(model, 'get', kwargs=kwargs, tot=tot)
 
     def assertAPIListCalled(self, model, kwargs, tot=1):
+        # 'ModifiedOn asc' is the default ordering so just add it to kwargs if not present
+        if 'order_by' not in kwargs:
+            kwargs['order_by'] = ['ModifiedOn asc']
         self.assertAPICalled(model, 'list', kwargs=kwargs, tot=tot)
 
     def assertAPIDeleteCalled(self, model, kwargs, tot=1):
