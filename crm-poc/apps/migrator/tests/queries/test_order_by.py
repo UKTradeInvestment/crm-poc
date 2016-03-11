@@ -14,7 +14,7 @@ class OrderByTestCase(BaseMockedCDMSApiTestCase):
         self.assertAPIListCalled(
             SimpleObj,
             kwargs={
-                'filters': [],
+                'filters': '',
                 'order_by': ['ModifiedOn asc']
             }
         )
@@ -31,7 +31,7 @@ class OrderByTestCase(BaseMockedCDMSApiTestCase):
         self.assertAPIListCalled(
             SimpleObj,
             kwargs={
-                'filters': [],
+                'filters': '',
                 'order_by': ['Name asc']
             }
         )
@@ -48,7 +48,7 @@ class OrderByTestCase(BaseMockedCDMSApiTestCase):
         self.assertAPIListCalled(
             SimpleObj,
             kwargs={
-                'filters': [],
+                'filters': '',
                 'order_by': ['Name desc']
             }
         )
@@ -66,7 +66,7 @@ class OrderByTestCase(BaseMockedCDMSApiTestCase):
         self.assertAPIListCalled(
             SimpleObj,
             kwargs={
-                'filters': [],
+                'filters': '',
                 'order_by': ['ModifiedOn asc', 'Name desc']
             }
         )
