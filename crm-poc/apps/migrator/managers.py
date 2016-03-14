@@ -105,11 +105,6 @@ class CDMSQuerySet(models.QuerySet):
                     raise NotImplementedError(
                         'Cannot yet get all objects, not implemented yet'
                     )
-            else:
-                if self.query.has_filters():
-                    raise NotImplementedError(
-                        'Filter chaining not implemented yet, please combine your filters into one'
-                    )
 
             if not (len(kwargs.keys()) == 1 and list(kwargs)[0] in ('id', 'pk')):
                 clone = self._clone()

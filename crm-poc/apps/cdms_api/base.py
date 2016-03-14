@@ -145,7 +145,7 @@ class CDMSApi(object):
     def list(self, service, top=50, skip=0, select=None, filters=None, order_by=None):
         params = {}
         if filters:
-            params['$filter'] = ' and '.join(filters)
+            params['$filter'] = filters
 
         if select:
             params['$select'] = ','.join(select)

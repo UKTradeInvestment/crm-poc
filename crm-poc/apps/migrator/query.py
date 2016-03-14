@@ -1,8 +1,6 @@
 import sys
 import warnings
 import datetime
-from numbers import Number
-
 
 from django.db import transaction, models
 from django.db.models.sql.query import get_field_names_from_opts, get_order_dir
@@ -15,6 +13,7 @@ from cdms_api import api as cdms_conn
 
 from .models import CDMSModel
 from .exceptions import NotMappingFieldException
+from .lookups import FilterNode, Lookup
 
 
 class CDMSCompiler(object):
@@ -32,51 +31,8 @@ class CDMSCompiler(object):
 
 
 class CDMSSelectCompiler(CDMSCompiler):
-    EXPRS = {
-        'exact': '{field} eq {value}',
-        'iexact': '{field} eq {value}',
-        'lt': '{field} lt {value}',
-        'lte': '{field} le {value}',
-        'gt': '{field} gt {value}',
-        'gte': '{field} ge {value}',
-        'contains': 'substringof({value}, {field})',
-        'icontains': 'substringof({value}, {field})',
-        'startswith': 'startswith({field}, {value})',
-        'istartswith': 'startswith({field}, tolower({value}))',
-        'endswith': 'endswith({field}, {value})',
-        'iendswith': 'endswith({field}, tolower({value}))',
-        'year': 'year({field}) eq {value}',
-        'month': 'month({field}) eq {value}',
-        'day': 'day({field}) eq {value}',
-        'hour': 'hour({field}) eq {value}',
-        'minute': 'minute({field}) eq {value}',
-        'second': 'second({field}) eq {value}',
-    }
-
-    def convert_value(self, value):
-        if isinstance(value, Number):
-            return value
-        if isinstance(value, datetime.datetime):
-            return "datetime'{value}'".format(value=value.strftime("%Y-%m-%dT%H:%M:%S"))
-        if isinstance(value, datetime.date):
-            raise NotImplementedError('TODO: format date, should be easy')
-        if isinstance(value, datetime.time):
-            raise NotImplementedError('TODO: format time, should be easy')
-        if isinstance(value, CDMSModel):
-            return "guid'{value}'".format(value=value.cdms_pk)
-        return "'{value}'".format(value=value)
-
     def get_filters(self):
-        cdms_filters = []
-        for field, expr, value in self.query.filters:
-            cdms_expr = self.EXPRS.get(expr)
-            if not cdms_expr:
-                raise NotImplementedError('Expression %s not recognised yet' % expr)
-
-            cdms_filters.append(
-                cdms_expr.format(field=field, value=self.convert_value(value))
-            )
-        return cdms_filters
+        return self.query.filters.as_filter_string()
 
     def get_order_by(self):
         cdms_orderby = []
@@ -153,7 +109,6 @@ class CDMSRefreshCompiler(CDMSGetCompiler):
     def get_cdms_data(self):
         if self.query.cdms_data:
             return self.query.cdms_data
-        # get cdms_obj
         return super(CDMSRefreshCompiler, self).execute()
 
     def get_local_obj(self):
@@ -234,7 +189,7 @@ class CDMSQuery(object):
     def __init__(self, model):
         self.model = model
 
-        self.filters = []
+        self.filters = FilterNode()
         self.empty = False
         self.cdms_known_related_objects = {}
         self.order_by = []
@@ -246,32 +201,30 @@ class CDMSQuery(object):
         self.empty = True
 
     def add_q(self, q_object):
-        self._add_q(q_object)
+        clause = self._add_q(q_object)
+        if clause:
+            self.filters.add(clause, Lookup.AND)
 
     def _add_q(self, q_object, branch_negated=False, current_negated=False):
-        if q_object.connector != q_object.AND:
-            raise NotImplementedError(
-                'OR filtering not implemented yet, please only use AND'
-            )
-
         connector = q_object.connector
         current_negated = current_negated ^ q_object.negated
         branch_negated = branch_negated or q_object.negated
+        target_clause = FilterNode(connector=connector, negated=q_object.negated)
         for child in q_object.children:
             if isinstance(child, Node):
-                child_clause, needed_inner = self._add_q(
+                child_clause = self._add_q(
                     child, branch_negated,
                     current_negated
                 )
             else:
-                field_name, lookup, value = self.build_filter(
+                child_clause = self.build_filter(
                     child, branch_negated=branch_negated,
                     connector=connector,
                     current_negated=current_negated
                 )
-                self.filters.append(
-                    (field_name, lookup, value)
-                )
+            if child_clause:
+                target_clause.add(child_clause, connector)
+        return target_clause
 
     def solve_lookup_type(self, lookup):
         """
@@ -383,7 +336,7 @@ class CDMSQuery(object):
         else:
             cdms_field_name = cdms_field.cdms_name
 
-        return cdms_field_name, lookups[0], value
+        return Lookup(cdms_field_name, lookups[0], value)
 
     def prepare_lookup_value(self, value, lookups):
         # Default lookup if none given is exact.
