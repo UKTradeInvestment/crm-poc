@@ -5,19 +5,9 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from cdms_api.exceptions import CDMSNotFoundException
 
+from .decorators import only_with_cdms_skip
 from .query import CDMSQuery, CDMSModelIterable, RefreshQuery, \
     InsertQuery, UpdateQuery
-
-
-def only_with_cdms_skip(func):
-    def wrapper(self, *args, **kwargs):
-        if not self.cdms_skip:
-            raise NotImplementedError(
-                '{method} not implemented yet'.format(method=func.__name__)
-            )
-
-        return func(self, *args, **kwargs)
-    return wrapper
 
 
 class CDMSQuerySet(models.QuerySet):
@@ -226,9 +216,11 @@ class CDMSQuerySet(models.QuerySet):
     def select_related(self, *args, **kwargs):
         return super(CDMSQuerySet, self).select_related(*args, **kwargs)
 
-    @only_with_cdms_skip
     def prefetch_related(self, *args, **kwargs):
-        return super(CDMSQuerySet, self).prefetch_related(*args, **kwargs)
+        """
+        Technically possible to implement in cdms_skip mode but not as easy as I would have expected so not worth it.
+        """
+        raise NotImplementedError()
 
     @only_with_cdms_skip
     def extra(self, *args, **kwargs):

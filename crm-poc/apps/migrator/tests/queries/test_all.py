@@ -35,21 +35,24 @@ class AllTestCase(BaseMockedCDMSApiTestCase):
                 'CreatedOn': (timezone.now() - datetime.timedelta(days=2)).replace(microsecond=0),
                 'ModifiedOn': (timezone.now() - datetime.timedelta(days=1)).replace(microsecond=0),
                 'DateTimeField': None,
-                'IntField': None
+                'IntField': None,
+                'FKField': None
             },
             {
                 'SimpleId': 'cdms-pk2',
                 'Name': 'name2',
                 'ModifiedOn': obj2.modified,
                 'DateTimeField': None,
-                'IntField': 20
+                'IntField': 20,
+                'FKField': None
             },
             {
                 'SimpleId': 'cdms-pk3',
                 'Name': 'name3',
                 'ModifiedOn': obj3.modified + datetime.timedelta(days=1),
                 'DateTimeField': None,
-                'IntField': 20
+                'IntField': 20,
+                'FKField': None
             },
         ]
         self.mocked_cdms_api.list.side_effect = mocked_cdms_list(

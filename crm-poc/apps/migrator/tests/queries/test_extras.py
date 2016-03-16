@@ -136,7 +136,10 @@ class PrefetchRelatedTestCase(SingleObjMixin, BaseMockedCDMSApiTestCase):
         self.assertNoAPICalled()
 
     def test_skip_cdms(self):
-        SimpleObj.objects.skip_cdms().prefetch_related('fk_obj').get(pk=self.obj.pk)
+        self.assertRaises(
+            NotImplementedError,
+            SimpleObj.objects.skip_cdms().prefetch_related
+        )
         self.assertNoAPICalled()
 
 

@@ -58,7 +58,13 @@ class UpdateWithSaveTestCase(BaseMockedCDMSApiTestCase):
             SimpleObj,
             kwargs={
                 'guid': 'cdms-pk',
-                'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None, 'SimpleId': 'cdms-pk'}
+                'data': {
+                    'Name': 'simple obj',
+                    'DateTimeField': None,
+                    'IntField': None,
+                    'SimpleId': 'cdms-pk',
+                    'FKField': None
+                }
             }
         )
         self.assertAPINotCalled(['list', 'create', 'delete'])

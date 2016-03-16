@@ -71,7 +71,8 @@ class GetByCmdPKTestCase(BaseGetTestCase):
                 'ModifiedOn': modified_on,
                 'Name': 'new name',
                 'DateTimeField': None,
-                'IntField': None
+                'IntField': None,
+                'FKField': None
             }
         )
 
@@ -202,7 +203,8 @@ class SyncGetTestCase(BaseGetTestCase):
                 'ModifiedOn': modified_on,
                 'Name': 'new name',
                 'DateTimeField': '/Date(1451606400000)/',
-                'IntField': 10
+                'IntField': 10,
+                'FKField': None
             }
         )
 
