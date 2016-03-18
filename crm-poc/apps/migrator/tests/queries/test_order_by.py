@@ -1,5 +1,3 @@
-from unittest import skip
-
 from migrator.tests.queries.models import SimpleObj
 from migrator.tests.queries.base import BaseMockedCDMSApiTestCase
 
@@ -97,9 +95,20 @@ class OrderByTestCase(BaseMockedCDMSApiTestCase):
 
         self.assertAPINotCalled(['get', 'create', 'delete', 'update'])
 
-    @skip('TODO: to be fixed')
     def test_order_by_related_obj_field(self):
-        pass
+        """
+        Klass.objects.all().order_by('fk_obj') should order by foreign key field.
+        """
+        list(SimpleObj.objects.all().order_by('fk_obj'))
+
+        self.assertAPIListCalled(
+            SimpleObj,
+            kwargs={
+                'filters': '',
+                'order_by': ['FKField asc']
+            }
+        )
+        self.assertAPINotCalled(['get', 'create', 'delete', 'update'])
 
 
 class OrderBySkipCDMSTestCase(BaseMockedCDMSApiTestCase):
@@ -131,6 +140,6 @@ class OrderBySkipCDMSTestCase(BaseMockedCDMSApiTestCase):
         list(SimpleObj.objects.skip_cdms().all().order_by('?'))
         self.assertNoAPICalled()
 
-    @skip('TODO: to be fixed')
     def test_order_by_related_obj_field(self):
-        pass
+        list(SimpleObj.objects.skip_cdms().all().order_by('fk_obj'))
+        self.assertNoAPICalled()

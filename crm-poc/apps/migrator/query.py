@@ -267,6 +267,8 @@ class CDMSQuery(object):
                     )
 
                 if field.is_relation and len(names) > 1:
+                    # cdms doesn't like 'relatedField/Field' so much but it could potentially
+                    # be possible so investigate further if worth.
                     raise NotImplementedError(
                         'Only filtering by foreign key allowed at the moment'
                     )
@@ -332,6 +334,8 @@ class CDMSQuery(object):
         cdms_field = self.model.cdms_migrator.get_cdms_field(field_name)
 
         if field.is_relation:
+            if not isinstance(value, CDMSModel):
+                raise NotImplementedError('Please use an object as value of relation fields')
             cdms_field_name = '{field}/Id'.format(field=cdms_field.cdms_name)
         else:
             cdms_field_name = cdms_field.cdms_name

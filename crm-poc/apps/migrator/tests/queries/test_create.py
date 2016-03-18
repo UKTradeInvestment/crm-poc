@@ -39,7 +39,8 @@ class CreateWithSaveTestCase(BaseMockedCDMSApiTestCase):
                 'data': {
                     'Name': 'simple obj',
                     'DateTimeField': '/Date(1451606400000)/',
-                    'IntField': 10
+                    'IntField': 10,
+                    'FKField': None
                 }
             }
         )
@@ -88,7 +89,14 @@ class CreateWithManagerTestCase(BaseMockedCDMSApiTestCase):
         self.assertEqual(obj.modified, modified_on)
 
         self.assertAPICreateCalled(
-            SimpleObj, kwargs={'data': {'Name': 'simple obj', 'DateTimeField': None, 'IntField': None}}
+            SimpleObj, kwargs={
+                'data': {
+                    'Name': 'simple obj',
+                    'DateTimeField': None,
+                    'IntField': None,
+                    'FKField': None
+                }
+            }
         )
         self.assertAPINotCalled(['list', 'update', 'delete', 'get'])
 
